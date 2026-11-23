@@ -95,6 +95,7 @@ scripts/    analyze_audio.py, comfy_client.py, assemble.py
 
 ## Git / GitHub
 - 公开仓库 https://github.com/shi0275206485-dev/Arti-2M（分支 `main`）。只提交代码和设计源文件；`.gitignore` 排除所有生成的媒体（projects/ songs/ music/ audio/ stems/ clips/ output/ analysis/ shots 下的 frames/plates/stage*）、`.venv/`、`logs/`，以及凭证 `.suno/`、`.spotify/`。公开仓库：提交前确认没有密钥、令牌或个人信息。
+- 分支：`main` = 稳定版本（打标签，`v0.1` 起），`dev` = 日常开发。新改动提交到 `dev`；合并回 `main` 和打新标签只在用户要求时做。
 - 本仓库提交身份是 GitHub noreply 邮箱（仓库级 `git config user.email`），不要改回个人邮箱。只在用户要求时提交/推送。
 
 ## 工作规则
