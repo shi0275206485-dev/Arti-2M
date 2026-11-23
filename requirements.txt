@@ -6,3 +6,8 @@ demucs
 scikit-learn
 torch            # CPU build is enough for singer_id.py
 huggingface_hub
+# web agent (webagent/)
+fastapi
+uvicorn
+anthropic
+httpx
