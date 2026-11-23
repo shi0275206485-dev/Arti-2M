@@ -106,8 +106,12 @@ CLAUDE.md     详细的工作笔记：硬件、约定、踩过的坑
 生成的媒体文件（`songs/`、`projects/`、`music/`、`audio/`、`clips/`、`output/` 等）和凭证
 （`.suno/`、`.spotify/`）都由 `.gitignore` 排除，不会进仓库。
 
+## 许可证
+
+本仓库的代码以 [MIT 许可证](LICENSE) 发布。
+
 ## 说明
 
-- **许可**：各模型权重（YuE2、Qwen、LTX-2.3、MiniMax、Demucs 等）和第三方服务（Claude、Suno、Spotify）有各自的许可与条款。商用生成内容前请先确认。
+- **第三方许可**：MIT 许可证只适用于本仓库的代码。各模型权重（YuE2、Qwen、LTX-2.3、MiniMax、Demucs 等）和第三方服务（Claude、Suno、Spotify）有各自的许可与条款。商用生成内容前请先确认。
 - **Suno**：只有在你逐首明确批准后才会消耗下载额度。应用遵守免费套餐的限制，不会绕过。
 - **AI 生成内容**：生成的音乐可能有瑕疵，纯音乐也不保证完全没有人声。发布前请先试听。

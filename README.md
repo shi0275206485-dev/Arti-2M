@@ -106,8 +106,12 @@ CLAUDE.md     detailed working notes (Chinese): hardware, conventions, lessons l
 Generated media (`songs/`, `projects/`, `music/`, `audio/`, `clips/`, `output/` …) and credentials
 (`.suno/`, `.spotify/`) are kept out of the repository by `.gitignore`.
 
+## License
+
+The code in this repository is released under the [MIT License](LICENSE).
+
 ## Notes
 
-- **Licensing**: model weights (YuE2, Qwen, LTX-2.3, MiniMax, Demucs …) and third-party services (Claude, Suno, Spotify) have their own licenses and terms. Check them before using generated content commercially.
+- **Third-party licenses**: the MIT license covers this repository's code only. Model weights (YuE2, Qwen, LTX-2.3, MiniMax, Demucs …) and third-party services (Claude, Suno, Spotify) have their own licenses and terms. Check them before using generated content commercially.
 - **Suno**: download credits are only spent after you explicitly approve each download. Free-plan limits are respected; the app never works around them.
 - **AI output**: generated music can contain artifacts, and instrumental tracks are not guaranteed to be vocal-free. Listen before you publish.
