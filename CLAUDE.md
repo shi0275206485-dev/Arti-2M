@@ -93,6 +93,10 @@ scripts/    analyze_audio.py, comfy_client.py, assemble.py
 | 修口型 | LatentSync | 后处理 |
 | 跳舞 | Wan Dancer | |
 
+## Git / GitHub
+- 公开仓库 https://github.com/shi0275206485-dev/Arti-2M（分支 `main`）。只提交代码和设计源文件；`.gitignore` 排除所有生成的媒体（projects/ songs/ music/ audio/ stems/ clips/ output/ analysis/ shots 下的 frames/plates/stage*）、`.venv/`、`logs/`，以及凭证 `.suno/`、`.spotify/`。公开仓库：提交前确认没有密钥、令牌或个人信息。
+- 本仓库提交身份是 GitHub noreply 邮箱（仓库级 `git config user.email`），不要改回个人邮箱。只在用户要求时提交/推送。
+
 ## 工作规则
 - 先低分辨率、短时长测试构图和节奏，用户确认后再出高清。
 - 镜头时长对齐到节拍：切点优先落在 downbeat（小节第一拍），副歌加快切换频率。
