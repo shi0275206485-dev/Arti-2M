@@ -4,6 +4,10 @@
     python scripts/spotify_genres.py fetch                              # -> data/genres.json
     python scripts/spotify_genres.py list
 
+NOTE (Feb 2026): Spotify removed GET /browse/categories (and /browse/new-releases) for Development Mode apps, so a
+normal personal app gets 403 here even with valid credentials. Only Extended Quota apps can still fetch categories;
+the built-in list (data/genres_builtin.json) is the default.
+
 Uses the Client Credentials flow (no user sign-in): create an app at https://developer.spotify.com/dashboard
 and copy its Client ID / Client Secret. Credentials can also come from SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET.
 Names are fetched in English and Chinese (locale en_US / zh_CN). Non-music categories (podcasts, audiobooks,
@@ -72,6 +76,12 @@ def _categories(token, locale):
         if r.status_code == 429:
             time.sleep(int(r.headers.get("Retry-After", "2")))
             continue
+        if r.status_code == 403:
+            # Feb 2026 Web API change: /browse/* was removed for Development Mode apps (new apps from 2026-02-11,
+            # existing ones from 2026-03-09). Credentials are fine (the token works); only Extended Quota apps keep it.
+            raise SpotifyError("Spotify refused the categories endpoint (403). Since February 2026 Spotify no longer "
+                               "offers /browse/categories to Development Mode apps; your credentials work, but this "
+                               "data is only available to apps with Extended Quota. Use the built-in categories.")
         if r.status_code != 200:
             raise SpotifyError(f"Spotify categories request failed ({r.status_code}): {r.text[:200]}")
         page = r.json()["categories"]

@@ -123,6 +123,7 @@ const EN = {
   "还没有 MV 项目：去「MV 制作」新建一个。": "No MV projects yet: create one in MV maker.",
   "还没有 MV 项目。": "No MV projects yet.",
   "音乐库是空的：在「音乐创作」里写第一首歌，或导入音频文件。": "The music library is empty: write your first song in Music maker, or import an audio file.",
+  "Spotify 拒绝了分类接口（403）。凭证没有问题，但 Spotify 从 2026 年 2 月起不再向开发模式（Development Mode）应用提供分类接口，只有获批 Extended Quota 的应用能用。请使用内置分类。": "Spotify refused the categories endpoint (403). Your credentials are fine, but since February 2026 Spotify no longer offers it to Development Mode apps; only apps approved for Extended Quota can use it. Use the built-in categories.",
   "音乐工作室": "Music studio", "MV 制作": "MV maker", "新建歌曲": "New song",
   "主题、语言、人声、BPM、氛围……（选了分类时可不写）\nClaude 据此写歌名、曲风和歌词": "Theme, language, vocals, BPM, mood… (optional when a category is picked)\nClaude writes the title, style and lyrics from this",
   "引擎": "Engine", "Claude 写歌": "Claude writes it", "自己写歌词": "Write my own lyrics", "导入音频文件": "Import audio file",

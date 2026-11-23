@@ -73,7 +73,7 @@ async function loadGenres() {
   $("#spcred").classList.toggle("hidden", !!genres.has_credentials);
   $("#sprefresh").disabled = !genres.has_credentials || job.running;
   $("#spstat").innerHTML = job.running ? (job.phase === "claude" ? t("Claude 正在为每个分类写曲风提示…") : t("正在从 Spotify 拉取…"))
-    : job.error ? `<span class="issues">${esc(job.error)}</span>`
+    : job.error ? `<span class="issues">${esc(job.error.includes("(403)") ? t("Spotify 拒绝了分类接口（403）。凭证没有问题，但 Spotify 从 2026 年 2 月起不再向开发模式（Development Mode）应用提供分类接口，只有获批 Extended Quota 的应用能用。请使用内置分类。") : job.error)}</span>`
     : n ? t("{0} 个音乐分类，拉取于 {1}", n, new Date(genres.fetched * 1000).toLocaleString())
     : genres.has_credentials ? t("凭证已保存，点下面按钮拉取") : t("可选：内置分类不需要 Spotify。要加 Spotify 自己的分类，需要一个 Spotify 开发者应用的凭证。");
   clearTimeout(genreTimer);
