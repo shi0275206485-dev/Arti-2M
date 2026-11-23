@@ -1,0 +1,66 @@
+[
+ {
+  "id": "ref_nova_1",
+  "prompt": "Character reference portrait of Korean woman in her early twenties, K-pop idol, sharp jawline, confident intense dark-brown eyes with smoky black eyeliner, sleek chin-length silver-white bob with a vivid cyan underlayer, small silver ear cuffs, black matte techwear jacket with glowing cyan LED piping along the seams, black high collar. Front-facing, head and shoulders, looking straight at the camera, neutral expression, even soft studio lighting with a subtle cyan / electric blue rim light, plain dark grey background, sharp focus, photorealistic, 85mm lens, no text, no watermark.",
+  "seed": 11,
+  "overrides": {
+   "461.filename_prefix": "ai-mv/ref_nova"
+  }
+ },
+ {
+  "id": "ref_nova_2",
+  "prompt": "Character reference portrait of Korean woman in her early twenties, K-pop idol, sharp jawline, confident intense dark-brown eyes with smoky black eyeliner, sleek chin-length silver-white bob with a vivid cyan underlayer, small silver ear cuffs, black matte techwear jacket with glowing cyan LED piping along the seams, black high collar. Front-facing, head and shoulders, looking straight at the camera, neutral expression, even soft studio lighting with a subtle cyan / electric blue rim light, plain dark grey background, sharp focus, photorealistic, 85mm lens, no text, no watermark.",
+  "seed": 22,
+  "overrides": {
+   "461.filename_prefix": "ai-mv/ref_nova"
+  }
+ },
+ {
+  "id": "ref_nova_3",
+  "prompt": "Character reference portrait of Korean woman in her early twenties, K-pop idol, sharp jawline, confident intense dark-brown eyes with smoky black eyeliner, sleek chin-length silver-white bob with a vivid cyan underlayer, small silver ear cuffs, black matte techwear jacket with glowing cyan LED piping along the seams, black high collar. Front-facing, head and shoulders, looking straight at the camera, neutral expression, even soft studio lighting with a subtle cyan / electric blue rim light, plain dark grey background, sharp focus, photorealistic, 85mm lens, no text, no watermark.",
+  "seed": 33,
+  "overrides": {
+   "461.filename_prefix": "ai-mv/ref_nova"
+  }
+ },
+ {
+  "id": "ref_nova_4",
+  "prompt": "Character reference portrait of Korean woman in her early twenties, K-pop idol, sharp jawline, confident intense dark-brown eyes with smoky black eyeliner, sleek chin-length silver-white bob with a vivid cyan underlayer, small silver ear cuffs, black matte techwear jacket with glowing cyan LED piping along the seams, black high collar. Front-facing, head and shoulders, looking straight at the camera, neutral expression, even soft studio lighting with a subtle cyan / electric blue rim light, plain dark grey background, sharp focus, photorealistic, 85mm lens, no text, no watermark.",
+  "seed": 44,
+  "overrides": {
+   "461.filename_prefix": "ai-mv/ref_nova"
+  }
+ },
+ {
+  "id": "ref_echo_1",
+  "prompt": "Character reference portrait of Korean woman in her early twenties, K-pop idol, soft gentle features, large luminous dark eyes, long straight black hair fading to magenta at the ends, delicate silver nose-bridge chain, white translucent high-collar outfit woven with glowing magenta fiber-optic threads. Front-facing, head and shoulders, looking straight at the camera, neutral expression, even soft studio lighting with a subtle magenta / red rim light, plain dark grey background, sharp focus, photorealistic, 85mm lens, no text, no watermark.",
+  "seed": 11,
+  "overrides": {
+   "461.filename_prefix": "ai-mv/ref_echo"
+  }
+ },
+ {
+  "id": "ref_echo_2",
+  "prompt": "Character reference portrait of Korean woman in her early twenties, K-pop idol, soft gentle features, large luminous dark eyes, long straight black hair fading to magenta at the ends, delicate silver nose-bridge chain, white translucent high-collar outfit woven with glowing magenta fiber-optic threads. Front-facing, head and shoulders, looking straight at the camera, neutral expression, even soft studio lighting with a subtle magenta / red rim light, plain dark grey background, sharp focus, photorealistic, 85mm lens, no text, no watermark.",
+  "seed": 22,
+  "overrides": {
+   "461.filename_prefix": "ai-mv/ref_echo"
+  }
+ },
+ {
+  "id": "ref_echo_3",
+  "prompt": "Character reference portrait of Korean woman in her early twenties, K-pop idol, soft gentle features, large luminous dark eyes, long straight black hair fading to magenta at the ends, delicate silver nose-bridge chain, white translucent high-collar outfit woven with glowing magenta fiber-optic threads. Front-facing, head and shoulders, looking straight at the camera, neutral expression, even soft studio lighting with a subtle magenta / red rim light, plain dark grey background, sharp focus, photorealistic, 85mm lens, no text, no watermark.",
+  "seed": 33,
+  "overrides": {
+   "461.filename_prefix": "ai-mv/ref_echo"
+  }
+ },
+ {
+  "id": "ref_echo_4",
+  "prompt": "Character reference portrait of Korean woman in her early twenties, K-pop idol, soft gentle features, large luminous dark eyes, long straight black hair fading to magenta at the ends, delicate silver nose-bridge chain, white translucent high-collar outfit woven with glowing magenta fiber-optic threads. Front-facing, head and shoulders, looking straight at the camera, neutral expression, even soft studio lighting with a subtle magenta / red rim light, plain dark grey background, sharp focus, photorealistic, 85mm lens, no text, no watermark.",
+  "seed": 44,
+  "overrides": {
+   "461.filename_prefix": "ai-mv/ref_echo"
+  }
+ }
+]

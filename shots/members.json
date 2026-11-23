@@ -1,0 +1,24 @@
+{
+  "song": "RESCUE (rescue_20261117_083220)",
+  "rule": "one voice = one member = one fixed face; only the member whose voice is singing may lip-sync",
+  "style_base": "cinematic cyberpunk K-pop music video still, rain-soaked neon city at night, volumetric haze, anamorphic lens, shallow depth of field, high detail skin texture, film grain",
+  "members": {
+    "NOVA": {
+      "voice": "A (main vocal: verse, pre-chorus, chorus, rap, bridge)",
+      "role": "the rescuer; runs through the city to reach ECHO",
+      "signature_color": "cyan / electric blue",
+      "look": "Korean woman in her early twenties, K-pop idol, sharp jawline, confident intense dark-brown eyes with smoky black eyeliner, sleek chin-length silver-white bob with a vivid cyan underlayer, small silver ear cuffs, black matte techwear jacket with glowing cyan LED piping along the seams, black high collar",
+      "reference_image": "shots/refs/NOVA.png",
+      "reference_source": "ref_nova_1 (Qwen Image 2.1 t2i, seed 11)"
+    },
+    "ECHO": {
+      "voice": "B (intro chant, dance-break ad-libs)",
+      "role": "the one trapped in a data capsule; her chant is the distress call; in the bridge her tears wake NOVA",
+      "signature_color": "magenta / red",
+      "look": "Korean woman in her early twenties, K-pop idol, soft gentle features, large luminous dark eyes, long straight black hair fading to magenta at the ends, delicate silver nose-bridge chain, white translucent high-collar outfit woven with glowing magenta fiber-optic threads",
+      "reference_image": "shots/refs/ECHO.png",
+      "reference_source": "ref_echo_2 (Qwen Image 2.1 t2i, seed 22)"
+    }
+  },
+  "reference_sheet_prompt": "Character reference portrait of {look}. Front-facing, head and shoulders, looking straight at the camera, neutral expression, even soft studio lighting with a subtle {signature_color} rim light, plain dark grey background, sharp focus, photorealistic, 85mm lens, no text, no watermark."
+}

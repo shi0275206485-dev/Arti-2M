@@ -1,0 +1,17 @@
+[
+ {
+  "id": "test_both_chorus",
+  "seed": 105,
+  "uploads": {
+   "470.image": "shots/refs/NOVA.png",
+   "476.image": "shots/refs/ECHO.png"
+  },
+  "prompt": "The woman from image 1 and the woman from image 2 stand back to back in the middle of a neon-lit intersection at night in the rain, image 1 woman on the left glowing cyan, image 2 woman on the right glowing magenta, beams of light rising around them, medium wide shot. Keep both women's faces, hairstyles and outfits exactly the same as in their reference images. cinematic cyberpunk K-pop music video still, volumetric haze, anamorphic lens, shallow depth of field, film grain, photorealistic.",
+  "overrides": {
+   "456.width": 1344,
+   "456.height": 768,
+   "468.switch": true,
+   "461.filename_prefix": "ai-mv/test_both"
+  }
+ }
+]

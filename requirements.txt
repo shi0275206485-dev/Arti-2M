@@ -1,0 +1,8 @@
+librosa>=0.10
+numpy
+soundfile
+requests
+demucs
+scikit-learn
+torch            # CPU build is enough for singer_id.py
+huggingface_hub

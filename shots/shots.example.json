@@ -1,0 +1,4 @@
+[
+  {"id": "s01", "prompt": "misty neon city at night, slow dolly forward, cinematic", "negative": "blurry, low quality", "seconds": 4.0, "seed": 1},
+  {"id": "s02", "prompt": "close-up of a singer under red stage light, singing", "negative": "blurry, deformed hands", "seconds": 2.0, "seed": 2}
+]

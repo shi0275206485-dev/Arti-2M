@@ -1,0 +1,2716 @@
+[
+ {
+  "id": "s001",
+  "section": "intro",
+  "delivery": "vocal chant",
+  "bars": [
+   0,
+   2
+  ],
+  "start": 0.0,
+  "end": 4.607,
+  "seconds": 4.607,
+  "gen_seconds": 4.91,
+  "lyrics": [],
+  "members": [],
+  "lipsync": null,
+  "shot": "aerial wide",
+  "location": null,
+  "frame": {
+   "mode": "t2i",
+   "refs": [],
+   "prompt": "Aerial night view of a vast rain-soaked cyberpunk megacity, endless neon towers in cyan and red haze, one black tower at the center with a single magenta light pulsing deep inside it"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "slow descending aerial push toward the central tower, rain streaks, the magenta light pulses like a heartbeat"
+  }
+ },
+ {
+  "id": "s002",
+  "section": "intro",
+  "delivery": "vocal chant",
+  "bars": [
+   3,
+   4
+  ],
+  "start": 4.607,
+  "end": 8.243,
+  "seconds": 3.636,
+  "gen_seconds": 3.94,
+  "lyrics": [],
+  "members": [],
+  "lipsync": null,
+  "shot": "wide",
+  "location": null,
+  "frame": {
+   "mode": "t2i",
+   "refs": [],
+   "prompt": "A cathedral-sized dark server hall, endless rows of black server racks with tiny blinking lights, in the center a tall translucent glass capsule glowing faint magenta"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "slow dolly forward between the racks toward the glowing capsule, drifting dust and data particles"
+  }
+ },
+ {
+  "id": "s003",
+  "section": "intro",
+  "delivery": "vocal chant",
+  "bars": [
+   5,
+   6
+  ],
+  "start": 8.243,
+  "end": 11.88,
+  "seconds": 3.637,
+  "gen_seconds": 3.94,
+  "lyrics": [],
+  "members": [
+   "ECHO"
+  ],
+  "lipsync": "ECHO",
+  "shot": "close-up",
+  "location": "hall",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/ECHO.png",
+    "shots/plates/hall.png"
+   ],
+   "prompt": "Close-up shot. the woman from image 1 floats inside the translucent glass data capsule, eyes half closed, softly singing, drifting magenta code particles around her. the woman from image 1 is fully enclosed inside the sealed, intact glass capsule, seen from outside through the glass, never standing outside it. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a close-up shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she sings softly with eyes half closed, hair floating weightlessly, particles drift upward"
+  }
+ },
+ {
+  "id": "s004",
+  "section": "intro",
+  "delivery": "vocal chant",
+  "bars": [
+   7,
+   8
+  ],
+  "start": 11.88,
+  "end": 15.516,
+  "seconds": 3.636,
+  "gen_seconds": 3.94,
+  "lyrics": [],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": null,
+  "shot": "medium close-up",
+  "location": "street",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/street.png"
+   ],
+   "prompt": "Medium close-up shot. the woman from image 1 stands still in the rain on the neon street while a faceless crowd under umbrellas walks past her with heads down, she alone has stopped and is listening, a faint magenta sound ripple glowing in the raindrops beside her, the black tower with its magenta light far behind her on the right side of the frame. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium close-up shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "the crowd keeps walking past without noticing, only she reacts: she turns her head to the right toward the tower, listening, eyes narrowing"
+  }
+ },
+ {
+  "id": "s005",
+  "section": "verse",
+  "delivery": "rhythmic sung",
+  "bars": [
+   9,
+   10
+  ],
+  "start": 15.516,
+  "end": 19.152,
+  "seconds": 3.636,
+  "gen_seconds": 3.94,
+  "lyrics": [
+   "깨진 도시 불빛 아래"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": "NOVA",
+  "shot": "medium tracking",
+  "location": "street",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/street.png"
+   ],
+   "prompt": "Medium tracking shot. the woman from image 1 walks through the crowd on the rainy neon street toward the right side of the frame, the black tower with its magenta light visible ahead at the far right end of the street. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium tracking shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "camera tracks alongside her as she walks right against the flow of the crowd, singing, people with umbrellas pass her going the other way"
+  }
+ },
+ {
+  "id": "s006",
+  "section": "verse",
+  "delivery": "rhythmic sung",
+  "bars": [
+   11,
+   12
+  ],
+  "start": 19.152,
+  "end": 22.789,
+  "seconds": 3.637,
+  "gen_seconds": 3.94,
+  "lyrics": [
+   "네 목소리가 희미해져"
+  ],
+  "members": [
+   "ECHO"
+  ],
+  "lipsync": null,
+  "shot": "wide insert",
+  "location": "street",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/ECHO.png",
+    "shots/plates/street.png"
+   ],
+   "prompt": "Wide insert shot. On the rainy neon street, a giant video screen mounted high on a building shows the face of the woman from image 1 in magenta light, her image breaking up into digital noise and static, faceless crowds under umbrellas walk below without looking up, no letters, no signage. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a wide insert shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "her face on the screen glitches, breaks apart and is erased into static, the crowd below keeps walking without looking up, rain falls"
+  }
+ },
+ {
+  "id": "s007",
+  "section": "verse",
+  "delivery": "rhythmic sung",
+  "bars": [
+   13,
+   14
+  ],
+  "start": 22.789,
+  "end": 26.425,
+  "seconds": 3.636,
+  "gen_seconds": 3.94,
+  "lyrics": [
+   "Calling out but no one hears"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": "NOVA",
+  "shot": "close-up",
+  "location": "street",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/street.png"
+   ],
+   "prompt": "Close-up shot. Close-up of the woman from image 1 in heavy rain on the neon street, wet hair, looking up and to the right with recognition and sorrow, flickering magenta screen light falling on her face. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a close-up shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she sings with longing while looking up, the magenta light on her face flickers and goes out"
+  }
+ },
+ {
+  "id": "s008",
+  "section": "verse",
+  "delivery": "rhythmic sung",
+  "bars": [
+   15,
+   16
+  ],
+  "start": 26.425,
+  "end": 30.062,
+  "seconds": 3.637,
+  "gen_seconds": 3.94,
+  "lyrics": [
+   "차가운 밤이 널 삼켜도"
+  ],
+  "members": [
+   "ECHO"
+  ],
+  "lipsync": null,
+  "shot": "medium",
+  "location": "hall",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/ECHO.png",
+    "shots/plates/hall.png"
+   ],
+   "prompt": "Medium shot. the woman from image 1 inside the sealed glass capsule, soft white frost fogging the edges of the intact smooth glass, her magenta glow fading, eyes closed, facing the camera. the woman from image 1 is fully enclosed inside the sealed, intact glass capsule, seen from outside through the glass, never standing outside it. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "static locked-off camera, the glass capsule stays around her the whole time, white frost slowly fogs the glass and her magenta glow dims, she stays still with eyes closed, only her hair drifts"
+  }
+ },
+ {
+  "id": "s009",
+  "section": "pre-chorus",
+  "delivery": "sung build",
+  "bars": [
+   17,
+   18
+  ],
+  "start": 30.062,
+  "end": 33.698,
+  "seconds": 3.636,
+  "gen_seconds": 3.94,
+  "lyrics": [
+   "손을 뻗어 just hold on"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": "NOVA",
+  "shot": "medium close-up",
+  "location": "street",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/street.png"
+   ],
+   "prompt": "Medium close-up shot. the woman from image 1 on the rainy neon street reaching her right hand out toward the right side of the frame, palm open and raised, cyan light glowing in her palm, the black tower blurred in the background. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium close-up shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she reaches toward the tower while singing, the cyan glow in her palm brightens"
+  }
+ },
+ {
+  "id": "s010",
+  "section": "pre-chorus",
+  "delivery": "sung build",
+  "bars": [
+   19,
+   20
+  ],
+  "start": 33.698,
+  "end": 37.334,
+  "seconds": 3.636,
+  "gen_seconds": 3.94,
+  "lyrics": [
+   "조금만 더 버텨줘"
+  ],
+  "members": [
+   "ECHO"
+  ],
+  "lipsync": null,
+  "shot": "close-up",
+  "location": "hall",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/ECHO.png",
+    "shots/plates/hall.png"
+   ],
+   "prompt": "Close-up shot. Seen from outside the capsule through its curved frosted glass wall: the woman from image 1 trapped inside the sealed capsule presses her right palm flat against the inside of the glass, palm open and raised like a reaching hand, glass reflections and frost between her and the camera, the capsule's metal frame around her. the woman from image 1 is fully enclosed inside the sealed, intact glass capsule, seen from outside through the glass, never standing outside it. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a close-up shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "behind the glass her fingers press harder, the magenta glow under her palm pulses as if answering, the glass stays closed"
+  }
+ },
+ {
+  "id": "s011",
+  "section": "pre-chorus",
+  "delivery": "sung build",
+  "bars": [
+   21,
+   22
+  ],
+  "start": 37.334,
+  "end": 40.971,
+  "seconds": 3.637,
+  "gen_seconds": 3.94,
+  "lyrics": [
+   "I'm running through the fire"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": null,
+  "shot": "following",
+  "location": "street",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/street.png"
+   ],
+   "prompt": "Following shot. Seen from behind and slightly to the left: the woman from image 1 sprinting away from the camera down the middle of the rainy neon street toward the black tower that rises at the end of the street ahead of her, the cyan light from her hand streaming behind her like a comet trail, people stepping aside. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a following shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "the camera follows close behind her at the same speed, keeping her in the center of the frame the whole time, she sprints toward the tower ahead, a cyan light trail streams from her hand"
+  }
+ },
+ {
+  "id": "s012",
+  "section": "pre-chorus",
+  "delivery": "sung build",
+  "bars": [
+   23,
+   23
+  ],
+  "start": 40.971,
+  "end": 42.789,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "너에게로 달려가"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": "NOVA",
+  "shot": "close-up",
+  "location": "street",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/street.png"
+   ],
+   "prompt": "Close-up shot. the woman from image 1 close-up on the street singing a high note with eyes closed, rings of cyan sound waves bursting out from her through the frozen rain, the tower's magenta light glowing far behind on the right. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a close-up shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she belts the high note, rings of cyan sound waves pulse outward from her, raindrops hang in slow motion"
+  }
+ },
+ {
+  "id": "s013",
+  "section": "pre-chorus",
+  "delivery": "sung build",
+  "bars": [
+   24,
+   24
+  ],
+  "start": 42.789,
+  "end": 44.607,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "너에게로 달려가"
+  ],
+  "members": [],
+  "lipsync": null,
+  "shot": "low-angle wide",
+  "location": "street",
+  "frame": {
+   "mode": "edit1",
+   "refs": [
+    "shots/plates/street.png"
+   ],
+   "prompt": "Low-angle wide shot. Low angle looking up from the rainy neon street at the black tower, a ring of cyan sound waves climbing up its side toward the magenta light at the top. Use the location shown in image 1 as the background, with the same architecture, lighting and colors, framed as a low-angle wide shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "the cyan wave races up the tower and touches the magenta light, which flares brighter for a moment"
+  }
+ },
+ {
+  "id": "s014",
+  "section": "chorus",
+  "delivery": "group hook",
+  "bars": [
+   25,
+   26
+  ],
+  "start": 44.607,
+  "end": 48.243,
+  "seconds": 3.636,
+  "gen_seconds": 3.94,
+  "lyrics": [
+   "I'll be your rescue, rescue"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": "NOVA",
+  "shot": "medium",
+  "location": "intersection",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/intersection.png"
+   ],
+   "prompt": "Medium shot. the woman from image 1 arriving at the foot of the black tower, standing in the middle of the rainy neon intersection facing it, beams of cyan light rising around her, powerful pose. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she sings powerfully, light beams rise around her, rain splashes"
+  }
+ },
+ {
+  "id": "s015",
+  "section": "chorus",
+  "delivery": "group hook",
+  "bars": [
+   27,
+   27
+  ],
+  "start": 48.243,
+  "end": 50.062,
+  "seconds": 1.819,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "I'll be your rescue, rescue"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": null,
+  "shot": "insert",
+  "location": "intersection",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/intersection.png"
+   ],
+   "prompt": "Insert shot. Close-up of the woman from image 1's open palm releasing glowing cyan light threads into the rain, the black tower behind. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a insert shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "light threads unspool from her palm and stream up toward the tower"
+  }
+ },
+ {
+  "id": "s016",
+  "section": "chorus",
+  "delivery": "group hook",
+  "bars": [
+   28,
+   28
+  ],
+  "start": 50.062,
+  "end": 51.88,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "어둠 속에 너를 찾아낼게"
+  ],
+  "members": [
+   "ECHO"
+  ],
+  "lipsync": null,
+  "shot": "close-up",
+  "location": "hall",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/ECHO.png",
+    "shots/plates/hall.png"
+   ],
+   "prompt": "Close-up shot. the woman from image 1 inside the capsule slowly opening her eyes as faint cyan threads touch the outside of the glass. the woman from image 1 is fully enclosed inside the sealed, intact glass capsule, seen from outside through the glass, never standing outside it. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a close-up shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "her eyes open slowly, cyan threads glide across the glass"
+  }
+ },
+ {
+  "id": "s017",
+  "section": "chorus",
+  "delivery": "group hook",
+  "bars": [
+   29,
+   30
+  ],
+  "start": 51.88,
+  "end": 55.516,
+  "seconds": 3.636,
+  "gen_seconds": 3.94,
+  "lyrics": [
+   "어둠 속에 너를 찾아낼게",
+   "Don't let go, I'm coming for you"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": "NOVA",
+  "shot": "close-up",
+  "location": "intersection",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/intersection.png"
+   ],
+   "prompt": "Close-up shot. the woman from image 1 close-up in the rain, determined eyes, cyan reflections on her wet face, neon bokeh behind. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a close-up shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she sings directly to camera with intensity, rain streaming"
+  }
+ },
+ {
+  "id": "s018",
+  "section": "chorus",
+  "delivery": "group hook",
+  "bars": [
+   31,
+   31
+  ],
+  "start": 55.516,
+  "end": 57.334,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "Don't let go, I'm coming for you"
+  ],
+  "members": [],
+  "lipsync": null,
+  "shot": "wide",
+  "location": "city",
+  "frame": {
+   "mode": "edit1",
+   "refs": [
+    "shots/plates/city.png"
+   ],
+   "prompt": "Wide shot. Wide shot of the neon city at night, a glowing cyan beam connecting a street intersection to the top of the central black tower. Use the location shown in image 1 as the background, with the same architecture, lighting and colors, framed as a wide shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "the beam pulses, the camera slowly cranes up"
+  }
+ },
+ {
+  "id": "s019",
+  "section": "chorus",
+  "delivery": "group hook",
+  "bars": [
+   32,
+   32
+  ],
+  "start": 57.334,
+  "end": 59.152,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "끝까지 지켜줄게"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": null,
+  "shot": "medium",
+  "location": "intersection",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/intersection.png"
+   ],
+   "prompt": "Medium shot. the woman from image 1 striding in slow motion through the rain toward the entrance of the black tower, jacket billowing. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "slow-motion stride toward the tower entrance, water splashing at each step"
+  }
+ },
+ {
+  "id": "s020",
+  "section": "chorus",
+  "delivery": "group hook",
+  "bars": [
+   33,
+   34
+  ],
+  "start": 59.152,
+  "end": 62.789,
+  "seconds": 3.637,
+  "gen_seconds": 3.94,
+  "lyrics": [
+   "끝까지 지켜줄게",
+   "I'll be your rescue, rescue"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": "NOVA",
+  "shot": "low angle",
+  "location": "intersection",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/intersection.png"
+   ],
+   "prompt": "Low angle shot. Low-angle shot of the woman from image 1 singing at the foot of the black tower, the tower looming above her into the storm, a cyan beam rising from her toward its top, rain. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a low angle shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she sings with arms spread, the cyan beam rises from her up the tower"
+  }
+ },
+ {
+  "id": "s021",
+  "section": "chorus",
+  "delivery": "group hook",
+  "bars": [
+   35,
+   35
+  ],
+  "start": 62.789,
+  "end": 64.607,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "I'll be your rescue, rescue"
+  ],
+  "members": [],
+  "lipsync": null,
+  "shot": "macro insert",
+  "location": null,
+  "frame": {
+   "mode": "t2i",
+   "refs": [],
+   "prompt": "Macro shot of a cyan light thread and a magenta light thread intertwining in dark space, glowing particles"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "the two threads spiral around each other and glow brighter"
+  }
+ },
+ {
+  "id": "s022",
+  "section": "chorus",
+  "delivery": "group hook",
+  "bars": [
+   36,
+   36
+  ],
+  "start": 64.607,
+  "end": 66.425,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "무너져도 다시 일으킬게"
+  ],
+  "members": [
+   "ECHO"
+  ],
+  "lipsync": null,
+  "shot": "profile close-up",
+  "location": "hall",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/ECHO.png",
+    "shots/plates/hall.png"
+   ],
+   "prompt": "Profile close-up shot. the woman from image 1 in profile inside the capsule, a tear forming in her eye, faint cyan light on her face. the woman from image 1 is fully enclosed inside the sealed, intact glass capsule, seen from outside through the glass, never standing outside it. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a profile close-up shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "a tear slowly forms, cyan light flickers across her cheek"
+  }
+ },
+ {
+  "id": "s023",
+  "section": "chorus",
+  "delivery": "group hook",
+  "bars": [
+   37,
+   38
+  ],
+  "start": 66.425,
+  "end": 70.062,
+  "seconds": 3.637,
+  "gen_seconds": 3.94,
+  "lyrics": [
+   "무너져도 다시 일으킬게",
+   "Say my name and I'll break through"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": "NOVA",
+  "shot": "medium",
+  "location": "intersection",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/intersection.png"
+   ],
+   "prompt": "Medium shot. the woman from image 1 singing with no microphone, her other hand down at her side, in the center of the rain-soaked intersection in front of the black tower, sweeping one arm upward as a wall of cyan light beams rises from the puddles toward the tower, faces clearly visible and sharp, waist-up framing with her face large in the frame. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she sings and sweeps her arm upward, a wall of cyan light beams rises from the puddles toward the tower"
+  }
+ },
+ {
+  "id": "s024",
+  "section": "chorus",
+  "delivery": "group hook",
+  "bars": [
+   39,
+   39
+  ],
+  "start": 70.062,
+  "end": 71.88,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "Say my name and I'll break through"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": null,
+  "shot": "medium",
+  "location": "intersection",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/intersection.png"
+   ],
+   "prompt": "Medium shot. the woman from image 1 slamming her fist onto wet asphalt in front of the black tower, a ring-shaped shockwave of cyan light bursting toward the tower. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "the shockwave ripples across the puddles toward the tower in slow motion"
+  }
+ },
+ {
+  "id": "s025",
+  "section": "chorus",
+  "delivery": "group hook",
+  "bars": [
+   40,
+   40
+  ],
+  "start": 71.88,
+  "end": 73.698,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "I'll be your rescue"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": null,
+  "shot": "overhead",
+  "location": "intersection",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/intersection.png"
+   ],
+   "prompt": "Overhead shot. Overhead top-down shot of the woman from image 1 standing in a glowing cyan circle of light on a wet black street. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a overhead shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "the camera spins slowly overhead, the circle pulses"
+  }
+ },
+ {
+  "id": "s026",
+  "section": "chorus",
+  "delivery": "group hook",
+  "bars": [
+   41,
+   41
+  ],
+  "start": 73.698,
+  "end": 75.516,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "I'll be your rescue"
+  ],
+  "members": [],
+  "lipsync": null,
+  "shot": "wide",
+  "location": "intersection",
+  "frame": {
+   "mode": "edit1",
+   "refs": [
+    "shots/plates/intersection.png"
+   ],
+   "prompt": "Wide shot. The entrance at the foot of the black tower, a massive steel shutter slamming down over it, the neon lights of the intersection flickering out one by one. Use the location shown in image 1 as the background, with the same architecture, lighting and colors, framed as a wide shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "the steel shutter slams shut over the tower entrance, the lights die out in sequence into darkness"
+  }
+ },
+ {
+  "id": "s027",
+  "section": "verse",
+  "delivery": "rap",
+  "bars": [
+   42,
+   42
+  ],
+  "start": 75.516,
+  "end": 77.334,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "They said it's over, 끝이라고"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": "NOVA",
+  "shot": "medium",
+  "location": "rooftop",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/rooftop.png"
+   ],
+   "prompt": "Medium shot. the woman from image 1 rapping on the edge of the neighbouring skyscraper's rooftop at night with no microphone, both hands down at chest level away from her face, mouth clearly visible, the black tower close by on the right, backlit by a giant cyan billboard, digital glitch artifacts. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she raps with sharp empty-handed gestures, the image glitches in rhythm"
+  }
+ },
+ {
+  "id": "s028",
+  "section": "verse",
+  "delivery": "rap",
+  "bars": [
+   43,
+   43
+  ],
+  "start": 77.334,
+  "end": 79.152,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "But I don't play by their rules"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": "NOVA",
+  "shot": "extreme close-up",
+  "location": "rooftop",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/rooftop.png"
+   ],
+   "prompt": "Extreme close-up shot. Extreme close-up of the woman from image 1's face rapping, smoky eyes, cyan digital glitch lines across the frame. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a extreme close-up shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she raps fast, glitch lines tear across"
+  }
+ },
+ {
+  "id": "s029",
+  "section": "verse",
+  "delivery": "rap",
+  "bars": [
+   44,
+   44
+  ],
+  "start": 79.152,
+  "end": 80.971,
+  "seconds": 1.819,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "상처투성이 날개라도"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": null,
+  "shot": "medium wide",
+  "location": "rooftop",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/rooftop.png"
+   ],
+   "prompt": "Medium wide shot. the woman from image 1 on the rooftop at night, broken flickering wings of cyan light spreading from her back, faces clearly visible and sharp. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium wide shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "the broken wings of light flicker and try to unfold, rain blowing"
+  }
+ },
+ {
+  "id": "s030",
+  "section": "verse",
+  "delivery": "rap",
+  "bars": [
+   45,
+   45
+  ],
+  "start": 80.971,
+  "end": 82.789,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "I'll fly to you, that's the truth"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": "NOVA",
+  "shot": "medium close-up",
+  "location": "rooftop",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/rooftop.png"
+   ],
+   "prompt": "Medium close-up shot. the woman from image 1 leaning toward the camera rapping aggressively, rain, red and cyan neon. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium close-up shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she leans in and raps hard toward the lens"
+  }
+ },
+ {
+  "id": "s031",
+  "section": "verse",
+  "delivery": "rap",
+  "bars": [
+   46,
+   46
+  ],
+  "start": 82.789,
+  "end": 84.607,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "한 걸음 또 한 걸음"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": null,
+  "shot": "full",
+  "location": "rooftop",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/rooftop.png"
+   ],
+   "prompt": "Full shot. the woman from image 1 walking fast along the narrow wet ledge of the rooftop toward the right, full body in frame, the city lights far below, the black tower ahead on the right. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a full shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "she walks quickly along the ledge toward the tower, rain blowing, the camera tracks beside her"
+  }
+ },
+ {
+  "id": "s032",
+  "section": "verse",
+  "delivery": "rap",
+  "bars": [
+   47,
+   47
+  ],
+  "start": 84.607,
+  "end": 86.425,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "Shadows try to pull me back"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": null,
+  "shot": "medium",
+  "location": "rooftop",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/rooftop.png"
+   ],
+   "prompt": "Medium shot. Black shadow tendrils of corrupted data grabbing at the woman from image 1's legs as she pushes forward on a rooftop. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "the shadows pull at her, she tears free"
+  }
+ },
+ {
+  "id": "s033",
+  "section": "verse",
+  "delivery": "rap",
+  "bars": [
+   48,
+   48
+  ],
+  "start": 86.425,
+  "end": 88.243,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "Heartbeat louder than the thunder"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": "NOVA",
+  "shot": "close-up",
+  "location": "rooftop",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/rooftop.png"
+   ],
+   "prompt": "Close-up shot. the woman from image 1 rapping with no microphone, both hands down at chest level away from her face, mouth clearly visible, lightning flashing behind her in the stormy sky. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a close-up shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she raps with sharp hand gestures as lightning cracks behind her"
+  }
+ },
+ {
+  "id": "s034",
+  "section": "verse",
+  "delivery": "rap",
+  "bars": [
+   49,
+   49
+  ],
+  "start": 88.243,
+  "end": 90.062,
+  "seconds": 1.819,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "너를 향한 이 길 위로"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": null,
+  "shot": "medium tracking",
+  "location": "rooftop",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/rooftop.png"
+   ],
+   "prompt": "Medium tracking shot. the woman from image 1 running across a narrow skybridge toward the black tower at night, seen from the side at waist height, faces clearly visible and sharp, waist-up framing with her face large in the frame. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium tracking shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "the camera tracks beside her at the same speed as she sprints across the bridge, keeping her face in frame, the billboard stays plain glowing cyan with no image"
+  }
+ },
+ {
+  "id": "s035",
+  "section": "pre-chorus",
+  "delivery": "sung build",
+  "bars": [
+   50,
+   51
+  ],
+  "start": 90.062,
+  "end": 93.698,
+  "seconds": 3.636,
+  "gen_seconds": 3.94,
+  "lyrics": [
+   "손을 뻗어 just hold on"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": "NOVA",
+  "shot": "medium",
+  "location": "corridor",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/corridor.png"
+   ],
+   "prompt": "Medium shot. the woman from image 1 singing in a tower corridor washed in flashing red alarm lights. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she sings while walking forward, alarms flash"
+  }
+ },
+ {
+  "id": "s036",
+  "section": "pre-chorus",
+  "delivery": "sung build",
+  "bars": [
+   52,
+   53
+  ],
+  "start": 93.698,
+  "end": 97.334,
+  "seconds": 3.636,
+  "gen_seconds": 3.94,
+  "lyrics": [
+   "조금만 더 버텨줘"
+  ],
+  "members": [
+   "ECHO"
+  ],
+  "lipsync": null,
+  "shot": "close-up",
+  "location": "hall",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/ECHO.png",
+    "shots/plates/hall.png"
+   ],
+   "prompt": "Close-up shot. Hairline cracks appearing in the capsule glass in front of the woman from image 1's face, she weakly raises her hand. the woman from image 1 is fully enclosed inside the sealed, intact glass capsule, seen from outside through the glass, never standing outside it. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a close-up shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "cracks crawl across the glass as she lifts her hand"
+  }
+ },
+ {
+  "id": "s037",
+  "section": "pre-chorus",
+  "delivery": "sung build",
+  "bars": [
+   54,
+   55
+  ],
+  "start": 97.334,
+  "end": 100.971,
+  "seconds": 3.637,
+  "gen_seconds": 3.94,
+  "lyrics": [
+   "I'm running through the fire"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": null,
+  "shot": "tracking",
+  "location": "corridor",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/corridor.png"
+   ],
+   "prompt": "Tracking shot. the woman from image 1 running down an endless server corridor, sparks bursting from the racks. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a tracking shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "fast tracking shot as she runs, sparks explode on both sides"
+  }
+ },
+ {
+  "id": "s038",
+  "section": "pre-chorus",
+  "delivery": "sung build",
+  "bars": [
+   56,
+   56
+  ],
+  "start": 100.971,
+  "end": 102.789,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "너에게로 달려가"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": "NOVA",
+  "shot": "close-up",
+  "location": "corridor",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/corridor.png"
+   ],
+   "prompt": "Close-up shot. the woman from image 1 singing a high note with eyes shut, cyan light radiating from her. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a close-up shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she belts the high note, light radiates outward"
+  }
+ },
+ {
+  "id": "s039",
+  "section": "pre-chorus",
+  "delivery": "sung build",
+  "bars": [
+   57,
+   57
+  ],
+  "start": 102.789,
+  "end": 104.607,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "너에게로 달려가"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": null,
+  "shot": "medium wide",
+  "location": "hall",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/hall.png"
+   ],
+   "prompt": "Medium wide shot. the woman from image 1 bursting through a heavy door into the dark server hall, cyan light flooding in behind her, faces clearly visible and sharp. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium wide shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "she strides forward toward the camera into the dark hall, the open door glowing cyan behind her, she never turns around"
+  }
+ },
+ {
+  "id": "s040",
+  "section": "chorus",
+  "delivery": "group hook",
+  "bars": [
+   58,
+   59
+  ],
+  "start": 104.607,
+  "end": 108.243,
+  "seconds": 3.636,
+  "gen_seconds": 3.94,
+  "lyrics": [
+   "I'll be your rescue, rescue"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": "NOVA",
+  "shot": "medium",
+  "location": "hall",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/hall.png"
+   ],
+   "prompt": "Medium shot. the woman from image 1 in the dark server hall facing the glowing glass capsule, swirling cyan light threads around her. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she sings toward the capsule, light threads swirl"
+  }
+ },
+ {
+  "id": "s041",
+  "section": "chorus",
+  "delivery": "group hook",
+  "bars": [
+   60,
+   60
+  ],
+  "start": 108.243,
+  "end": 110.062,
+  "seconds": 1.819,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "어둠 속에 너를 찾아낼게"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": null,
+  "shot": "insert",
+  "location": "hall",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/hall.png"
+   ],
+   "prompt": "Insert shot. the woman from image 1's palm pressed on the outside of the capsule glass, cyan light meeting magenta light under it. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a insert shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "cyan and magenta light bleed into each other across the glass"
+  }
+ },
+ {
+  "id": "s042",
+  "section": "chorus",
+  "delivery": "group hook",
+  "bars": [
+   61,
+   61
+  ],
+  "start": 110.062,
+  "end": 111.88,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "어둠 속에 너를 찾아낼게"
+  ],
+  "members": [
+   "ECHO"
+  ],
+  "lipsync": null,
+  "shot": "close-up",
+  "location": "hall",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/ECHO.png",
+    "shots/plates/hall.png"
+   ],
+   "prompt": "Close-up shot. the woman from image 1 inside the capsule, eyes fully open, looking out through the glass with hope. the woman from image 1 is fully enclosed inside the sealed, intact glass capsule, seen from outside through the glass, never standing outside it. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a close-up shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "she slowly looks up, eyes shimmering"
+  }
+ },
+ {
+  "id": "s043",
+  "section": "chorus",
+  "delivery": "group hook",
+  "bars": [
+   62,
+   63
+  ],
+  "start": 111.88,
+  "end": 115.516,
+  "seconds": 3.636,
+  "gen_seconds": 3.94,
+  "lyrics": [
+   "Don't let go, I'm coming for you"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": "NOVA",
+  "shot": "close-up",
+  "location": "hall",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/hall.png"
+   ],
+   "prompt": "Close-up shot. the woman from image 1 standing outside the capsule, close-up seen from inside the capsule looking out through the curved glass, magenta glow and glass reflections in the foreground over her face. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a close-up shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she sings with emotion, reflections ripple on the glass"
+  }
+ },
+ {
+  "id": "s044",
+  "section": "chorus",
+  "delivery": "group hook",
+  "bars": [
+   64,
+   64
+  ],
+  "start": 115.516,
+  "end": 117.334,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "끝까지 지켜줄게"
+  ],
+  "members": [],
+  "lipsync": null,
+  "shot": "wide",
+  "location": "hall",
+  "frame": {
+   "mode": "edit1",
+   "refs": [
+    "shots/plates/hall.png"
+   ],
+   "prompt": "Wide shot. Wide shot of the endless server hall, rows of racks lighting up cyan one after another toward the capsule. Use the location shown in image 1 as the background, with the same architecture, lighting and colors, framed as a wide shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "the cyan wave of light races down the rows"
+  }
+ },
+ {
+  "id": "s045",
+  "section": "chorus",
+  "delivery": "group hook",
+  "bars": [
+   65,
+   65
+  ],
+  "start": 117.334,
+  "end": 119.152,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "끝까지 지켜줄게"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": null,
+  "shot": "medium",
+  "location": "hall",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/hall.png"
+   ],
+   "prompt": "Medium shot. the woman from image 1 pulling at thick glowing cables wrapped around the capsule base, sparks flying. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "she pulls hard, cables snap, sparks burst"
+  }
+ },
+ {
+  "id": "s046",
+  "section": "chorus",
+  "delivery": "group hook",
+  "bars": [
+   66,
+   67
+  ],
+  "start": 119.152,
+  "end": 122.789,
+  "seconds": 3.637,
+  "gen_seconds": 3.94,
+  "lyrics": [
+   "I'll be your rescue, rescue"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": "NOVA",
+  "shot": "medium",
+  "location": "hall",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/hall.png"
+   ],
+   "prompt": "Medium shot. the woman from image 1 singing in a vortex of cyan and magenta light threads inside the server hall, hair blowing. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "the light vortex spins around her as she sings"
+  }
+ },
+ {
+  "id": "s047",
+  "section": "chorus",
+  "delivery": "group hook",
+  "bars": [
+   68,
+   68
+  ],
+  "start": 122.789,
+  "end": 124.607,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "무너져도 다시 일으킬게"
+  ],
+  "members": [
+   "ECHO"
+  ],
+  "lipsync": null,
+  "shot": "close-up",
+  "location": "hall",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/ECHO.png",
+    "shots/plates/hall.png"
+   ],
+   "prompt": "Close-up shot. the woman from image 1 pressing her forehead against the inside of the glass, eyes closed, magenta light trembling. the woman from image 1 is fully enclosed inside the sealed, intact glass capsule, seen from outside through the glass, never standing outside it. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a close-up shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "she leans her forehead on the glass, light trembles"
+  }
+ },
+ {
+  "id": "s048",
+  "section": "chorus",
+  "delivery": "group hook",
+  "bars": [
+   69,
+   69
+  ],
+  "start": 124.607,
+  "end": 126.425,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "무너져도 다시 일으킬게"
+  ],
+  "members": [
+   "NOVA",
+   "ECHO"
+  ],
+  "lipsync": null,
+  "shot": "insert",
+  "location": "hall",
+  "frame": {
+   "mode": "edit3",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/refs/ECHO.png",
+    "shots/plates/hall.png"
+   ],
+   "prompt": "Insert shot. Side view of the curved capsule glass wall: the woman from image 2 inside the capsule and the woman from image 1 outside it, their hands pressed on opposite sides of the same glass pane, aligned palm to palm, cyan glow on the outside, magenta glow on the inside. the woman from image 2 is fully enclosed inside the sealed, intact glass capsule, seen from outside through the glass, never standing outside it, while the woman from image 1 stands outside the capsule, never inside it. Use the location shown in image 3 as the background, with the same architecture, lighting and colors, framed as a insert shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "the two glows merge where the palms align"
+  }
+ },
+ {
+  "id": "s049",
+  "section": "chorus",
+  "delivery": "group hook",
+  "bars": [
+   70,
+   71
+  ],
+  "start": 126.425,
+  "end": 130.062,
+  "seconds": 3.637,
+  "gen_seconds": 3.94,
+  "lyrics": [
+   "Say my name and I'll break through"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": "NOVA",
+  "shot": "medium close-up",
+  "location": "hall",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/hall.png"
+   ],
+   "prompt": "Medium close-up shot. the woman from image 1 singing with full intensity, light threads tearing around her, server hall shaking. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium close-up shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she sings with all her strength, sparks and light everywhere"
+  }
+ },
+ {
+  "id": "s050",
+  "section": "chorus",
+  "delivery": "group hook",
+  "bars": [
+   72,
+   72
+  ],
+  "start": 130.062,
+  "end": 131.88,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "I'll be your rescue"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": null,
+  "shot": "medium",
+  "location": "hall",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/hall.png"
+   ],
+   "prompt": "Medium shot. the woman from image 1 stumbling as the cyan light around her flickers and fails, power dying. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "her light flickers and fades, she staggers"
+  }
+ },
+ {
+  "id": "s051",
+  "section": "chorus",
+  "delivery": "group hook",
+  "bars": [
+   73,
+   73
+  ],
+  "start": 131.88,
+  "end": 133.698,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "I'll be your rescue"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": null,
+  "shot": "medium",
+  "location": "hall",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/hall.png"
+   ],
+   "prompt": "Medium shot. the woman from image 1 falling to her knees in the dark server hall in front of the capsule, her cyan light nearly gone, faces clearly visible and sharp, waist-up framing with her face large in the frame. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "she sinks to her knees in slow motion, darkness closes in"
+  }
+ },
+ {
+  "id": "s052",
+  "section": "bridge",
+  "delivery": "sung, emotional",
+  "bars": [
+   74,
+   75
+  ],
+  "start": 133.698,
+  "end": 137.334,
+  "seconds": 3.636,
+  "gen_seconds": 3.94,
+  "lyrics": [
+   "어쩌면 날 구한 건 너였어"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": "NOVA",
+  "shot": "medium",
+  "location": "hall",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/hall.png"
+   ],
+   "prompt": "Medium shot. the woman from image 1 kneeling exhausted in the dark server hall, looking up at the capsule, dim light. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she sings softly, looking up with tired eyes"
+  }
+ },
+ {
+  "id": "s053",
+  "section": "bridge",
+  "delivery": "sung, emotional",
+  "bars": [
+   76,
+   77
+  ],
+  "start": 137.334,
+  "end": 140.971,
+  "seconds": 3.637,
+  "gen_seconds": 3.94,
+  "lyrics": [
+   "All this time you were the light"
+  ],
+  "members": [
+   "ECHO"
+  ],
+  "lipsync": "ECHO",
+  "shot": "close-up",
+  "location": "hall",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/ECHO.png",
+    "shots/plates/hall.png"
+   ],
+   "prompt": "Close-up shot. Close-up of the woman from image 1 singing inside the capsule, a single glowing magenta tear on her cheek, fine glowing cracks spreading across the glass in front of her. the woman from image 1 is fully enclosed inside the sealed, intact glass capsule, seen from outside through the glass, never standing outside it. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a close-up shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she sings softly with growing strength, the cracks in the glass spread with her voice"
+  }
+ },
+ {
+  "id": "s054",
+  "section": "bridge",
+  "delivery": "sung, emotional",
+  "bars": [
+   78,
+   79
+  ],
+  "start": 140.971,
+  "end": 144.607,
+  "seconds": 3.636,
+  "gen_seconds": 3.94,
+  "lyrics": [
+   "너의 눈물이 날 깨웠어"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": "NOVA",
+  "shot": "close-up",
+  "location": "hall",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/hall.png"
+   ],
+   "prompt": "Close-up shot. the woman from image 1 close-up as drops of magenta light fall onto her face, cyan light reigniting in her eyes. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a close-up shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she sings as the light returns to her eyes"
+  }
+ },
+ {
+  "id": "s055",
+  "section": "bridge",
+  "delivery": "sung, emotional",
+  "bars": [
+   80,
+   81
+  ],
+  "start": 144.607,
+  "end": 148.243,
+  "seconds": 3.636,
+  "gen_seconds": 3.94,
+  "lyrics": [
+   "Now we rise, we rise"
+  ],
+  "members": [
+   "NOVA",
+   "ECHO"
+  ],
+  "lipsync": "ECHO",
+  "shot": "medium",
+  "location": "hall",
+  "frame": {
+   "mode": "edit3",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/refs/ECHO.png",
+    "shots/plates/hall.png"
+   ],
+   "prompt": "Medium shot. the woman from image 1 kneeling outside the capsule and the woman from image 2 trapped inside it, on opposite sides of the capsule glass, palms together, both singing, cracks spreading through the glass glowing magenta and cyan, faces clearly visible and sharp. the woman from image 2 is fully enclosed inside the sealed, intact glass capsule, seen from outside through the glass, never standing outside it, while the woman from image 1 stands outside the capsule, never inside it. Use the location shown in image 3 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "both women sing the same line together, the cracks spread outward with growing light"
+  }
+ },
+ {
+  "id": "s056",
+  "section": "dance break",
+  "delivery": "instrumental build + ad-libs",
+  "bars": [
+   82,
+   82
+  ],
+  "start": 148.243,
+  "end": 150.062,
+  "seconds": 1.819,
+  "gen_seconds": 2.12,
+  "lyrics": [],
+  "members": [
+   "ECHO"
+  ],
+  "lipsync": null,
+  "shot": "wide",
+  "location": "hall",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/ECHO.png",
+    "shots/plates/hall.png"
+   ],
+   "prompt": "Wide shot. The glass capsule shattering in slow motion, shards of glowing glass flying around the woman from image 1. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a wide shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "glass explodes outward in slow motion, she floats inside"
+  }
+ },
+ {
+  "id": "s057",
+  "section": "dance break",
+  "delivery": "instrumental build + ad-libs",
+  "bars": [
+   83,
+   83
+  ],
+  "start": 150.062,
+  "end": 151.88,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [],
+  "members": [
+   "ECHO"
+  ],
+  "lipsync": null,
+  "shot": "medium",
+  "location": "hall_broken",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/ECHO.png",
+    "shots/plates/hall_broken.png"
+   ],
+   "prompt": "Medium shot. the woman from image 1 stepping out of the shattered capsule, hair floating, magenta fiber-optic threads blazing. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "she steps forward onto the floor, threads blaze"
+  }
+ },
+ {
+  "id": "s058",
+  "section": "dance break",
+  "delivery": "instrumental build + ad-libs",
+  "bars": [
+   84,
+   84
+  ],
+  "start": 151.88,
+  "end": 153.698,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [],
+  "members": [
+   "NOVA",
+   "ECHO"
+  ],
+  "lipsync": null,
+  "shot": "medium",
+  "location": "hall_broken",
+  "frame": {
+   "mode": "edit3",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/refs/ECHO.png",
+    "shots/plates/hall_broken.png"
+   ],
+   "prompt": "Medium shot. the woman from image 1 and the woman from image 2 face to face in the server hall, taking each other's hands, glass shards hanging in the air. Use the location shown in image 3 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "they take each other's hands, shards drift"
+  }
+ },
+ {
+  "id": "s059",
+  "section": "dance break",
+  "delivery": "instrumental build + ad-libs",
+  "bars": [
+   85,
+   85
+  ],
+  "start": 153.698,
+  "end": 155.516,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [],
+  "members": [
+   "NOVA",
+   "ECHO"
+  ],
+  "lipsync": null,
+  "shot": "medium wide",
+  "location": "hall_broken",
+  "frame": {
+   "mode": "edit3",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/refs/ECHO.png",
+    "shots/plates/hall_broken.png"
+   ],
+   "prompt": "Medium wide shot. the woman from image 1 and the woman from image 2 standing back to back in the server hall as red alarm lasers sweep in from the racks around them, glass shards hanging in the air, faces clearly visible and sharp. Use the location shown in image 3 as the background, with the same architecture, lighting and colors, framed as a medium wide shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "red alarm lasers close in, both raise their hands together in the same sharp motion"
+  }
+ },
+ {
+  "id": "s060",
+  "section": "dance break",
+  "delivery": "instrumental build + ad-libs",
+  "bars": [
+   86,
+   86
+  ],
+  "start": 155.516,
+  "end": 157.334,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [],
+  "members": [
+   "ECHO"
+  ],
+  "lipsync": "ECHO",
+  "shot": "medium",
+  "location": "hall_broken",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/ECHO.png",
+    "shots/plates/hall_broken.png"
+   ],
+   "prompt": "Medium shot. the woman from image 1 singing as she sweeps her arm in a sharp move, magenta light threads slicing through red alarm lasers in the server hall. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she sings an ad-lib while sweeping her arm, magenta threads cut the red lasers apart"
+  }
+ },
+ {
+  "id": "s061",
+  "section": "dance break",
+  "delivery": "instrumental build + ad-libs",
+  "bars": [
+   87,
+   87
+  ],
+  "start": 157.334,
+  "end": 159.152,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": null,
+  "shot": "medium",
+  "location": "hall_broken",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/hall_broken.png"
+   ],
+   "prompt": "Medium shot. the woman from image 1 punching forward in a sharp move, a cyan shockwave shattering red alarm lasers in the server hall. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "she punches forward, the cyan shockwave breaks the red lasers apart"
+  }
+ },
+ {
+  "id": "s062",
+  "section": "dance break",
+  "delivery": "instrumental build + ad-libs",
+  "bars": [
+   88,
+   88
+  ],
+  "start": 159.152,
+  "end": 160.971,
+  "seconds": 1.819,
+  "gen_seconds": 2.12,
+  "lyrics": [],
+  "members": [
+   "NOVA",
+   "ECHO"
+  ],
+  "lipsync": null,
+  "shot": "medium wide",
+  "location": "hall_broken",
+  "frame": {
+   "mode": "edit3",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/refs/ECHO.png",
+    "shots/plates/hall_broken.png"
+   ],
+   "prompt": "Medium wide shot. the woman from image 1 and the woman from image 2 thrusting their palms forward together in the same pose, cyan and magenta light blasting from their hands into the server racks, faces clearly visible and sharp. Use the location shown in image 3 as the background, with the same architecture, lighting and colors, framed as a medium wide shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "they thrust their palms forward in sync, light bursts from every rack"
+  }
+ },
+ {
+  "id": "s063",
+  "section": "dance break",
+  "delivery": "instrumental build + ad-libs",
+  "bars": [
+   89,
+   89
+  ],
+  "start": 160.971,
+  "end": 162.789,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [],
+  "members": [],
+  "lipsync": null,
+  "shot": "wide",
+  "location": "hall_broken",
+  "frame": {
+   "mode": "edit1",
+   "refs": [
+    "shots/plates/hall_broken.png"
+   ],
+   "prompt": "Wide shot. A blinding burst of white light filling a server hall. Use the location shown in image 1 as the background, with the same architecture, lighting and colors, framed as a wide shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "light expands into a full white-out"
+  }
+ },
+ {
+  "id": "s064",
+  "section": "chorus",
+  "delivery": "group hook, final",
+  "bars": [
+   90,
+   90
+  ],
+  "start": 162.789,
+  "end": 164.607,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "I'll be your rescue, rescue"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": "NOVA",
+  "shot": "medium",
+  "location": "dawn_rooftop",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/dawn_rooftop.png"
+   ],
+   "prompt": "Medium shot. the woman from image 1 singing on a rooftop at dawn, rain stopped, golden-pink sunrise sky over the cyberpunk city. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she sings joyfully, sunrise light washing over her"
+  }
+ },
+ {
+  "id": "s065",
+  "section": "chorus",
+  "delivery": "group hook, final",
+  "bars": [
+   91,
+   91
+  ],
+  "start": 164.607,
+  "end": 166.425,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "I'll be your rescue, rescue"
+  ],
+  "members": [
+   "ECHO"
+  ],
+  "lipsync": "ECHO",
+  "shot": "close-up",
+  "location": "dawn_rooftop",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/ECHO.png",
+    "shots/plates/dawn_rooftop.png"
+   ],
+   "prompt": "Close-up shot. the woman from image 1 singing at dawn on the rooftop with a soft smile, hair moving in the wind, warm sunrise light. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a close-up shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she sings joyfully, wind lifts her hair"
+  }
+ },
+ {
+  "id": "s066",
+  "section": "chorus",
+  "delivery": "group hook, final",
+  "bars": [
+   92,
+   92
+  ],
+  "start": 166.425,
+  "end": 168.243,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "어둠 속에 너를 찾아낼게"
+  ],
+  "members": [
+   "NOVA",
+   "ECHO"
+  ],
+  "lipsync": null,
+  "shot": "medium",
+  "location": "dawn_street",
+  "frame": {
+   "mode": "edit3",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/refs/ECHO.png",
+    "shots/plates/dawn_street.png"
+   ],
+   "prompt": "Medium shot. the woman from image 1 and the woman from image 2 walking side by side out of the black tower's open entrance onto the wet street at sunrise, people stopping to look at them, faces clearly visible and sharp, waist-up framing with both faces large in the frame. Use the location shown in image 3 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "they walk toward the camera together, morning light behind them"
+  }
+ },
+ {
+  "id": "s067",
+  "section": "chorus",
+  "delivery": "group hook, final",
+  "bars": [
+   93,
+   93
+  ],
+  "start": 168.243,
+  "end": 170.062,
+  "seconds": 1.819,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "어둠 속에 너를 찾아낼게"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": "NOVA",
+  "shot": "close-up",
+  "location": "dawn_rooftop",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/dawn_rooftop.png"
+   ],
+   "prompt": "Close-up shot. the woman from image 1 close-up singing in warm dawn light, a soft smile, cyan piping glowing faintly. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a close-up shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she sings with a smile, sun flare passes behind her"
+  }
+ },
+ {
+  "id": "s068",
+  "section": "chorus",
+  "delivery": "group hook, final",
+  "bars": [
+   94,
+   94
+  ],
+  "start": 170.062,
+  "end": 171.88,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "Don't let go, I'm coming for you"
+  ],
+  "members": [],
+  "lipsync": null,
+  "shot": "wide",
+  "location": "dawn_street",
+  "frame": {
+   "mode": "edit1",
+   "refs": [
+    "shots/plates/dawn_street.png"
+   ],
+   "prompt": "Wide shot. Cyberpunk city at sunrise, neon signs switching off one by one as golden sunlight hits the wet streets. Use the location shown in image 1 as the background, with the same architecture, lighting and colors, framed as a wide shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "neon signs turn off as the sunlight spreads"
+  }
+ },
+ {
+  "id": "s069",
+  "section": "chorus",
+  "delivery": "group hook, final",
+  "bars": [
+   95,
+   95
+  ],
+  "start": 171.88,
+  "end": 173.698,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "Don't let go, I'm coming for you"
+  ],
+  "members": [
+   "NOVA",
+   "ECHO"
+  ],
+  "lipsync": "ECHO",
+  "shot": "medium",
+  "location": "dawn_street",
+  "frame": {
+   "mode": "edit3",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/refs/ECHO.png",
+    "shots/plates/dawn_street.png"
+   ],
+   "prompt": "Medium shot. the woman from image 1 and the woman from image 2 side by side in the sunlit wet street, both singing together toward the camera, faces clearly visible and sharp. Use the location shown in image 3 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "both women sing the same line together toward the camera"
+  }
+ },
+ {
+  "id": "s070",
+  "section": "chorus",
+  "delivery": "group hook, final",
+  "bars": [
+   96,
+   96
+  ],
+  "start": 173.698,
+  "end": 175.516,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "끝까지 지켜줄게"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": "NOVA",
+  "shot": "medium",
+  "location": "dawn_street",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/dawn_street.png"
+   ],
+   "prompt": "Medium shot. the woman from image 1 singing to a crowd of citizens gathering in the sunlit street, people raising their hands around her. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she sings to the crowd, hands rise around her"
+  }
+ },
+ {
+  "id": "s071",
+  "section": "chorus",
+  "delivery": "group hook, final",
+  "bars": [
+   97,
+   97
+  ],
+  "start": 175.516,
+  "end": 177.334,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "끝까지 지켜줄게"
+  ],
+  "members": [
+   "ECHO"
+  ],
+  "lipsync": "ECHO",
+  "shot": "medium",
+  "location": "dawn_street",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/ECHO.png",
+    "shots/plates/dawn_street.png"
+   ],
+   "prompt": "Medium shot. the woman from image 1 singing in the sunlit street in front of the giant video screen that once erased her, the screen now showing her face again, bright and whole in magenta light, no letters. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she sings, the screen behind her keeps showing only her face glowing brighter, no text appears"
+  }
+ },
+ {
+  "id": "s072",
+  "section": "chorus",
+  "delivery": "group hook, final",
+  "bars": [
+   98,
+   98
+  ],
+  "start": 177.334,
+  "end": 179.152,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "I'll be your rescue, rescue"
+  ],
+  "members": [
+   "NOVA",
+   "ECHO"
+  ],
+  "lipsync": "ECHO",
+  "shot": "medium",
+  "location": "dawn_rooftop",
+  "frame": {
+   "mode": "edit3",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/refs/ECHO.png",
+    "shots/plates/dawn_rooftop.png"
+   ],
+   "prompt": "Medium shot. the woman from image 1 and the woman from image 2 standing back to back, heads turned toward the camera, both singing, sunrise behind them, faces clearly visible and sharp. Use the location shown in image 3 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "both sing the same line together, a slow orbit around them"
+  }
+ },
+ {
+  "id": "s073",
+  "section": "chorus",
+  "delivery": "group hook, final",
+  "bars": [
+   99,
+   99
+  ],
+  "start": 179.152,
+  "end": 180.971,
+  "seconds": 1.819,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "I'll be your rescue, rescue"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": "NOVA",
+  "shot": "close-up",
+  "location": "dawn_rooftop",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/dawn_rooftop.png"
+   ],
+   "prompt": "Close-up shot. the woman from image 1 close-up singing, sunlight in her eyes. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a close-up shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she sings directly to camera"
+  }
+ },
+ {
+  "id": "s074",
+  "section": "chorus",
+  "delivery": "group hook, final",
+  "bars": [
+   100,
+   100
+  ],
+  "start": 180.971,
+  "end": 182.789,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "무너져도 다시 일으킬게"
+  ],
+  "members": [],
+  "lipsync": null,
+  "shot": "wide",
+  "location": "dawn_street",
+  "frame": {
+   "mode": "edit1",
+   "refs": [
+    "shots/plates/dawn_street.png"
+   ],
+   "prompt": "Wide shot. Crowd of citizens on a cyberpunk street at dawn looking up at the sky, faces lit by golden morning light. Use the location shown in image 1 as the background, with the same architecture, lighting and colors, framed as a wide shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "people slowly lift their heads toward the light"
+  }
+ },
+ {
+  "id": "s075",
+  "section": "chorus",
+  "delivery": "group hook, final",
+  "bars": [
+   101,
+   101
+  ],
+  "start": 182.789,
+  "end": 184.607,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "무너져도 다시 일으킬게"
+  ],
+  "members": [
+   "NOVA",
+   "ECHO"
+  ],
+  "lipsync": null,
+  "shot": "medium wide",
+  "location": "dawn_street",
+  "frame": {
+   "mode": "edit3",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/refs/ECHO.png",
+    "shots/plates/dawn_street.png"
+   ],
+   "prompt": "Medium wide shot. the woman from image 1 and the woman from image 2 in the middle of the sunlit intersection surrounded by a cheering crowd, faces clearly visible and sharp. Use the location shown in image 3 as the background, with the same architecture, lighting and colors, framed as a medium wide shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "the crowd cheers around them, sparkles of light drift in the sun"
+  }
+ },
+ {
+  "id": "s076",
+  "section": "chorus",
+  "delivery": "group hook, final",
+  "bars": [
+   102,
+   102
+  ],
+  "start": 184.607,
+  "end": 186.425,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "Say my name and I'll break through"
+  ],
+  "members": [
+   "ECHO"
+  ],
+  "lipsync": "ECHO",
+  "shot": "medium",
+  "location": "dawn_street",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/ECHO.png",
+    "shots/plates/dawn_street.png"
+   ],
+   "prompt": "Medium shot. the woman from image 1 singing with high energy, arms raised, sunlight and lens flare. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she sings with arms raised, lens flare sweeps across"
+  }
+ },
+ {
+  "id": "s077",
+  "section": "chorus",
+  "delivery": "group hook, final",
+  "bars": [
+   103,
+   103
+  ],
+  "start": 186.425,
+  "end": 188.243,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "Say my name and I'll break through"
+  ],
+  "members": [
+   "NOVA",
+   "ECHO"
+  ],
+  "lipsync": null,
+  "shot": "insert",
+  "location": "dawn_rooftop",
+  "frame": {
+   "mode": "edit3",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/refs/ECHO.png",
+    "shots/plates/dawn_rooftop.png"
+   ],
+   "prompt": "Insert shot. the woman from image 1's and the woman from image 2's clasped hands raised together toward the rising sun. Use the location shown in image 3 as the background, with the same architecture, lighting and colors, framed as a insert shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "their joined hands rise into the sunlight"
+  }
+ },
+ {
+  "id": "s078",
+  "section": "chorus",
+  "delivery": "group hook, final",
+  "bars": [
+   104,
+   104
+  ],
+  "start": 188.243,
+  "end": 190.062,
+  "seconds": 1.819,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "I'll be your rescue"
+  ],
+  "members": [
+   "NOVA"
+  ],
+  "lipsync": "NOVA",
+  "shot": "close-up",
+  "location": "dawn_rooftop",
+  "frame": {
+   "mode": "edit2",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/plates/dawn_rooftop.png"
+   ],
+   "prompt": "Close-up shot. the woman from image 1 close-up singing the last line, eyes glistening, warm light. Use the location shown in image 2 as the background, with the same architecture, lighting and colors, framed as a close-up shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "she sings the final line softly"
+  }
+ },
+ {
+  "id": "s079",
+  "section": "chorus",
+  "delivery": "group hook, final",
+  "bars": [
+   105,
+   105
+  ],
+  "start": 190.062,
+  "end": 191.88,
+  "seconds": 1.818,
+  "gen_seconds": 2.12,
+  "lyrics": [
+   "I'll be your rescue"
+  ],
+  "members": [
+   "NOVA",
+   "ECHO"
+  ],
+  "lipsync": "ECHO",
+  "shot": "medium",
+  "location": "dawn_rooftop",
+  "frame": {
+   "mode": "edit3",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/refs/ECHO.png",
+    "shots/plates/dawn_rooftop.png"
+   ],
+   "prompt": "Medium shot. the woman from image 1 and the woman from image 2 standing together facing the camera at sunrise on a rooftop, both singing the last line, faces clearly visible and sharp. Use the location shown in image 3 as the background, with the same architecture, lighting and colors, framed as a medium shot"
+  },
+  "video": {
+   "mode": "lipsync",
+   "prompt": "both sing the final line together, slow push-in as the sun rises behind them"
+  }
+ },
+ {
+  "id": "s080",
+  "section": "outro",
+  "delivery": "fade",
+  "bars": [
+   106,
+   107
+  ],
+  "start": 191.88,
+  "end": 195.516,
+  "seconds": 3.636,
+  "gen_seconds": 3.94,
+  "lyrics": [],
+  "members": [
+   "NOVA",
+   "ECHO"
+  ],
+  "lipsync": null,
+  "shot": "wide",
+  "location": "dawn_street",
+  "frame": {
+   "mode": "edit3",
+   "refs": [
+    "shots/refs/NOVA.png",
+    "shots/refs/ECHO.png",
+    "shots/plates/dawn_street.png"
+   ],
+   "prompt": "Wide shot. Silhouettes of the woman from image 1 and the woman from image 2 walking away together into the sunrise along a wet street. Use the location shown in image 3 as the background, with the same architecture, lighting and colors, framed as a wide shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "they walk away slowly, camera stays still"
+  }
+ },
+ {
+  "id": "s081",
+  "section": "outro",
+  "delivery": "fade",
+  "bars": [
+   108,
+   109
+  ],
+  "start": 195.516,
+  "end": 199.152,
+  "seconds": 3.636,
+  "gen_seconds": 3.94,
+  "lyrics": [],
+  "members": [],
+  "lipsync": null,
+  "shot": "close-up",
+  "location": "hall_broken",
+  "frame": {
+   "mode": "edit1",
+   "refs": [
+    "shots/plates/hall_broken.png"
+   ],
+   "prompt": "Close-up shot. Shattered glowing glass shards on a dark server hall floor, a thin cyan thread and magenta thread intertwined among them. Use the location shown in image 1 as the background, with the same architecture, lighting and colors, framed as a close-up shot"
+  },
+  "video": {
+   "mode": "i2v",
+   "prompt": "the threads glow softly then slowly fade to black"
+  }
+ }
+]

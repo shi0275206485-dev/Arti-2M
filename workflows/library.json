@@ -1,0 +1,86 @@
+{
+ "entries": {
+  "minimax_h3_int8_20261120_191100": {
+   "name": "MiniMax H3 图生视频（本地 int8）",
+   "role": "i2v",
+   "bind": {
+    "image": [
+     "114",
+     "image"
+    ],
+    "prompt": [
+     "105:104",
+     "prompt"
+    ],
+    "seed": [
+     "105:15",
+     "noise_seed"
+    ],
+    "seconds": [
+     "105:111",
+     "value"
+    ],
+    "output": [
+     "92",
+     "filename_prefix"
+    ]
+   },
+   "fixed": {
+    "115": {
+     "aspect_ratio": "16:9 (Widescreen)",
+     "megapixels": 0.92,
+     "multiple": 32
+    },
+    "105:126": {
+     "value": false
+    }
+   },
+   "fps": 24.0,
+   "frame_multiple": 1,
+   "file": "workflows/user/minimax_h3_int8_20261120_191100.json",
+   "t": 1795164046.74961
+  },
+  "minimax_h3_8_20261120_212842": {
+   "name": "MiniMax H3 图生视频（8 步加速）",
+   "role": "i2v",
+   "bind": {
+    "image": [
+     "114",
+     "image"
+    ],
+    "prompt": [
+     "105:104",
+     "prompt"
+    ],
+    "seed": [
+     "105:15",
+     "noise_seed"
+    ],
+    "seconds": [
+     "105:111",
+     "value"
+    ],
+    "output": [
+     "92",
+     "filename_prefix"
+    ]
+   },
+   "fixed": {
+    "115": {
+     "aspect_ratio": "16:9 (Widescreen)",
+     "megapixels": 0.92,
+     "multiple": 32
+    },
+    "105:126": {
+     "value": true
+    }
+   },
+   "fps": 24,
+   "frame_multiple": 1,
+   "file": "workflows/user/minimax_h3_8_20261120_212842.json",
+   "t": 1795163322.2720258,
+   "est_seconds": 240,
+   "chunk_budget": 900
+  }
+ }
+}

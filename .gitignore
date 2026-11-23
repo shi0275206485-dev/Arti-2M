@@ -1,0 +1,38 @@
+# --- secrets / local credentials (never commit) ---
+.suno/
+.spotify/
+.env
+*.key
+
+# --- local environment ---
+.venv/
+__pycache__/
+*.pyc
+logs/
+.claude/settings.local.json
+
+# --- generated media and per-run outputs (large; regenerate with the pipeline) ---
+projects/
+songs/
+music/
+audio/
+stems/
+clips/
+output/
+analysis/
+shots/frames/
+shots/plates/
+shots/stage/
+shots/stage2/
+shots/tests/
+workflows/user/
+data/genres.json
+*.wav
+*.mp3
+*.flac
+*.mp4
+*.npy
+*.safetensors
+*.ckpt
+
+# design sources under shots/ ARE kept: shot_design*.py, members.json, refs.json, shots*.json, refs/*.png
