@@ -13,7 +13,7 @@ every generated frame and clip, while the heavy lifting runs locally (YuE2 for m
 - **Click-to-choose settings** instead of long prompts: sub-genre, vocals, language, moods, instruments, tempo, length.
 - **Three song sources**: local **YuE2** (default), **Suno** (optional, through its official API), or import your own audio file.
 - **Instrumental songs**, no lyrics needed (YuE2's plan → move melody to instrument → render workflow).
-- **Categories**: 59 built-in genres / regions / moods, plus optional Spotify browse categories.
+- **Categories**: 59 built-in genres / regions / moods, each with a style hint written for the generators.
 - **YuE2 options** with plain-language labels: composition mode, creativity, style adherence, a longer score limit, seed.
 
 **Music video**
@@ -53,7 +53,7 @@ idea / category ──► Claude writes song ──► YuE2 / Suno / upload ─�
 | Images / video | [ComfyUI](https://www.comfy.org/) (Desktop) with Qwen image, LTX-2.3 (and optionally MiniMax H3) models |
 | Tools | Python 3.13, `ffmpeg` on PATH |
 | Claude | An Anthropic API key |
-| Optional | A Suno account; a Spotify developer app (Client ID / Secret) for Spotify categories |
+| Optional | A Suno account |
 
 YuE2 and ComfyUI share the GPU and must not run at the same time. The agent stops ComfyUI before generating music.
 
@@ -95,7 +95,7 @@ python scripts/comfy_server.py start | status | stop
 ## Project layout
 
 ```
-scripts/      pipeline scripts (music, analysis, frames, videos, assembly, Suno/Spotify clients)
+scripts/      pipeline scripts (music, analysis, frames, videos, assembly, Suno client)
 webagent/     the web app: FastAPI server, Claude "brain", job engine, static UI
 workflows/    ComfyUI workflows in API format + workflow library
 shots/        example shot design (shot_design.py), members and reference images
@@ -112,6 +112,6 @@ The code in this repository is released under the [MIT License](LICENSE).
 
 ## Notes
 
-- **Third-party licenses**: the MIT license covers this repository's code only. Model weights (YuE2, Qwen, LTX-2.3, MiniMax, Demucs …) and third-party services (Claude, Suno, Spotify) have their own licenses and terms. Check them before using generated content commercially.
+- **Third-party licenses**: the MIT license covers this repository's code only. Model weights (YuE2, Qwen, LTX-2.3, MiniMax, Demucs …) and third-party services (Claude, Suno) have their own licenses and terms. Check them before using generated content commercially.
 - **Suno**: download credits are only spent after you explicitly approve each download. Free-plan limits are respected; the app never works around them.
 - **AI output**: generated music can contain artifacts, and instrumental tracks are not guaranteed to be vocal-free. Listen before you publish.

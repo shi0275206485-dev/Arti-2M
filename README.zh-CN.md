@@ -13,7 +13,7 @@
 - **点选式设定**，不用写长提示词：曲风类型、人声、语言、情绪、乐器、速度、长度。
 - **三种歌曲来源**：本地 **YuE2**（默认）、**Suno**（可选，走官方 API），或者导入自己的音频文件。
 - **纯音乐**：不需要歌词，按 YuE2 官方流程完成：先写谱，再把旋律移到乐器声部，最后生成。
-- **分类**：59 个内置分类（音乐类型 / 地区 / 情绪），另外可以选配 Spotify 分类。
+- **分类**：59 个内置分类（音乐类型 / 地区 / 情绪），每个都带有为生成器写好的曲风提示。
 - **YuE2 生成选项**都用白话写成：作曲方式、创意度、风格贴合度、加长乐谱上限、种子。
 
 **MV**
@@ -53,7 +53,7 @@
 | 图像 / 视频 | [ComfyUI](https://www.comfy.org/)（Desktop），装好 Qwen 图像、LTX-2.3 模型（MiniMax H3 可选） |
 | 工具 | Python 3.13，`ffmpeg` 在 PATH 中 |
 | Claude | Anthropic API Key |
-| 可选 | Suno 账号；Spotify 开发者应用（Client ID / Secret），用于 Spotify 分类 |
+| 可选 | Suno 账号 |
 
 YuE2 和 ComfyUI 共用显卡，不能同时运行。生成音乐前，Agent 会自动关闭 ComfyUI。
 
@@ -95,7 +95,7 @@ python scripts/comfy_server.py start | status | stop
 ## 目录结构
 
 ```
-scripts/      流水线脚本（音乐、分析、首帧、视频、剪辑，Suno / Spotify 客户端）
+scripts/      流水线脚本（音乐、分析、首帧、视频、剪辑，Suno 客户端）
 webagent/     网页应用：FastAPI 服务、Claude「大脑」、任务引擎、前端页面
 workflows/    ComfyUI 工作流（API 格式）和工作流库
 shots/        示例分镜设计（shot_design.py）、成员定义和参考图
@@ -112,6 +112,6 @@ CLAUDE.md     详细的工作笔记：硬件、约定、踩过的坑
 
 ## 说明
 
-- **第三方许可**：MIT 许可证只适用于本仓库的代码。各模型权重（YuE2、Qwen、LTX-2.3、MiniMax、Demucs 等）和第三方服务（Claude、Suno、Spotify）有各自的许可与条款。商用生成内容前请先确认。
+- **第三方许可**：MIT 许可证只适用于本仓库的代码。各模型权重（YuE2、Qwen、LTX-2.3、MiniMax、Demucs 等）和第三方服务（Claude、Suno）有各自的许可与条款。商用生成内容前请先确认。
 - **Suno**：只有在你逐首明确批准后才会消耗下载额度。应用遵守免费套餐的限制，不会绕过。
 - **AI 生成内容**：生成的音乐可能有瑕疵，纯音乐也不保证完全没有人声。发布前请先试听。

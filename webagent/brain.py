@@ -190,29 +190,6 @@ def song_draft(brief, engine="YuE2", instrumental=False, genre=None, settings=No
     return r
 
 
-GENRE_SCHEMA = _obj({"items": {"type": "array", "items": _obj({
-    "id": S, "style": S, "instrumental": {"type": "boolean"}})}})
-
-GENRE_SYSTEM = """You map music-streaming categories (genres, moods, activities) to prompts for AI music generators
-(YuE2 / Suno). For EVERY category given, return:
-- id: the category id exactly as given.
-- style: a generic style tag string (max 160 characters) a generator understands: sub-genre, 3-4 typical
-  instruments, typical vocal (or "instrumental"), mood, and a typical "<N> BPM". For moods/activities
-  (Chill, Workout, Sleep, Focus, Party ...) pick the music people usually play for it. For regional categories
-  (K-Pop, Mandopop, Latin, Afro ...) name the language of the vocals. Never name real artists or songs.
-- instrumental: true when the category is usually music without vocals (sleep, focus, classical, ambient,
-  lo-fi study ...), else false."""
-
-
-def genre_styles(categories):
-    """{id: {"style", "instrumental"}} for Spotify categories (one call for the whole list)."""
-    listing = "\n".join(f"{c['id']}: {c['name']}" + (f" ({c['name_zh']})" if c.get("name_zh") else "")
-                        for c in categories)
-    r = _call(GENRE_SYSTEM, [{"type": "text", "text": "Categories:\n" + listing}], GENRE_SCHEMA,
-              effort="low", max_tokens=16000)
-    return {i["id"]: {"style": i["style"], "instrumental": i["instrumental"]} for i in r["items"]}
-
-
 # ---------------------------------------------------------------- shot design
 SIZES = ["close-up", "medium close-up", "medium", "wide"]
 KINDS = ["solo", "duo", "stage_wide", "back_view", "empty"]

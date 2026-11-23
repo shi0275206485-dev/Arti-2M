@@ -2,7 +2,6 @@
 import json
 import re
 import sys
-import threading
 import time
 from pathlib import Path
 
@@ -340,8 +339,9 @@ def song_busy(sid):
     return any(j[0] == f"song:{sid}" for j in jobs)
 
 
-# ---------------------------------------------------------------- music categories (Spotify)
-_genre_job = {"running": False, "error": None, "phase": ""}
+# ---------------------------------------------------------------- music categories
+# Built-in list (data/genres_builtin.json). Spotify's own categories were dropped from the UI: since Feb 2026 Spotify
+# returns 403 on /browse/categories for Development Mode apps. scripts/spotify_genres.py still works from the CLI.
 
 
 def genre_obj(gid):
@@ -349,56 +349,13 @@ def genre_obj(gid):
         return None
     g = next((c for c in spotify_genres.all_categories() if c["id"] == gid), None)
     if not g:
-        raise HTTPException(400, "unknown category (refresh the Spotify categories)")
+        raise HTTPException(400, "unknown category")
     return {k: g.get(k) for k in ("id", "name", "name_zh", "style", "source")}
 
 
 @app.get("/api/genres")
 def genres():
-    d = spotify_genres.load()
-    return {"has_credentials": spotify_genres.has_credentials(), "fetched": d.get("fetched"),
-            "spotify_count": len(d.get("categories", [])), "categories": spotify_genres.all_categories(),
-            "job": _genre_job}
-
-
-@app.post("/api/genres/credentials")
-def genre_credentials(client_id: str = Body(...), client_secret: str = Body(...)):
-    if not re.fullmatch(r"[0-9a-fA-F]{32}", client_id.strip()) or not re.fullmatch(r"[0-9a-fA-F]{32}", client_secret.strip()):
-        raise HTTPException(400, "Client ID and Secret are 32 hex characters each")
-    spotify_genres.save_credentials(client_id, client_secret)
-    try:
-        spotify_genres._token()
-    except spotify_genres.SpotifyError as e:
-        raise HTTPException(400, str(e))
-    return {"ok": True}
-
-
-def _genre_refresh():
-    try:
-        _genre_job.update(phase="spotify", error=None)
-        d = spotify_genres.fetch()
-        todo = [c for c in d["categories"] if not c.get("style")]
-        if todo:
-            _genre_job["phase"] = "claude"
-            hints = brain.genre_styles(todo)
-            d = spotify_genres.load()
-            for c in d["categories"]:
-                c.update(hints.get(c["id"], {}))
-            spotify_genres.save(d)
-    except Exception as e:   # shown on the page
-        _genre_job["error"] = str(e)
-    finally:
-        _genre_job.update(running=False, phase="")
-
-
-@app.post("/api/genres/refresh")
-def genre_refresh():
-    if not spotify_genres.has_credentials():
-        raise HTTPException(400, "enter the Spotify Client ID / Secret first")
-    if not _genre_job["running"]:
-        _genre_job["running"] = True
-        threading.Thread(target=_genre_refresh, daemon=True).start()
-    return {"ok": True}
+    return {"categories": spotify_genres.all_categories()}
 
 
 @app.get("/api/song_options")
