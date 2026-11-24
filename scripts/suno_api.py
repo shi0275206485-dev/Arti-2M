@@ -51,9 +51,21 @@ def _write(name, data):
 
 
 # ------------------------------------------------------------------ OAuth
-def _client_id():
+def _client_valid(cid):
+    """Suno drops dynamically registered clients after a while (seen: a 2-day-old client got 400 "Invalid client
+    ID" at /authorize). Probe /authorize without following the redirect: a live client gets 302 to suno.com."""
+    q = {"response_type": "code", "client_id": cid, "redirect_uri": REDIRECTS[0], "state": "probe",
+         "code_challenge": "x" * 43, "code_challenge_method": "S256", "scope": SCOPES, "resource": RESOURCE}
+    try:
+        r = httpx.get(f"{AUTH}/authorize/?" + urllib.parse.urlencode(q), follow_redirects=False, timeout=20)
+    except httpx.HTTPError:
+        return True   # network trouble: keep the cached client, the real request will report the error
+    return not (r.status_code == 400 and "client" in r.text.lower())
+
+
+def _client_id(check=False):
     c = _read("client.json")
-    if c and set(REDIRECTS) <= set(c.get("redirect_uris", [])):
+    if c and set(REDIRECTS) <= set(c.get("redirect_uris", [])) and (not check or _client_valid(c["client_id"])):
         return c["client_id"]
     r = httpx.post(f"{AUTH}/register/", json={
         "client_name": "MV Agent (local)", "redirect_uris": REDIRECTS,
@@ -72,7 +84,7 @@ def login_url(redirect_uri=REDIRECTS[0]):
     challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
     state = secrets.token_urlsafe(24)
     _pending[state] = (verifier, redirect_uri)
-    q = {"response_type": "code", "client_id": _client_id(), "code_challenge": challenge,
+    q = {"response_type": "code", "client_id": _client_id(check=True), "code_challenge": challenge,
          "code_challenge_method": "S256", "redirect_uri": redirect_uri, "state": state, "scope": SCOPES,
          "prompt": "consent", "resource": RESOURCE}
     return f"{AUTH}/authorize/?" + urllib.parse.urlencode(q)
@@ -175,6 +187,21 @@ def _ensure_session():
     _session["ready"] = True
 
 
+def _parse_text(text):
+    """Tool text is JSON, sometimes followed by a plain-language hint for the model, e.g. audio-create returns
+    '{"clip_ids": [...], ...}This made 2 songs, one per id: ...'. Parse the leading JSON value and keep the hint
+    as "_note"; text that doesn't start with JSON comes back as {"text": ...}."""
+    s = text.lstrip()
+    try:
+        data, end = json.JSONDecoder().raw_decode(s)
+    except ValueError:
+        return {"text": text}
+    note = s[end:].strip()
+    if isinstance(data, dict) and note:
+        data["_note"] = note
+    return data
+
+
 def call(tool, args=None):
     """Call a Suno MCP tool, return its JSON result. Tool errors raise SunoError with the parsed payload."""
     for attempt in range(2):
@@ -192,10 +219,7 @@ def call(tool, args=None):
     text = "".join(c.get("text", "") for c in res.get("content", []) if c.get("type") == "text")
     data = res.get("structuredContent")
     if data is None:
-        try:
-            data = json.loads(text)
-        except ValueError:
-            data = {"text": text}
+        data = _parse_text(text)
     if res.get("isError"):
         raise SunoError(f"{tool}: {data.get('error') or text[:300]}", data if isinstance(data, dict) else {})
     return data

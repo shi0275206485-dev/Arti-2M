@@ -12,9 +12,11 @@ const STATUS = { pending: "未开始", running: "进行中", waiting: "等待确
 
 let cur = null, data = null, view = null, lastPanelKey = "";
 
+let claudeOk = false;
 async function refreshStatus() {
   try {
     const s = await api("/api/status");
+    claudeOk = s.claude.ok;
     const c = $("#claude");
     c.textContent = s.claude.ok ? t("Claude 已连接") : t("Claude 未配置");
     c.className = "pill " + (s.claude.ok ? "ok" : "bad");

@@ -133,7 +133,8 @@ def list_songs():
             st = json.loads(f.read_text(encoding="utf-8"))
             out.append({k: st.get(k) for k in ("id", "title", "engine", "status", "duration", "created",
                                                "instrumental", "genre")}
-                       | {"has_audio": (f.parent / "audio/song.wav").exists()})
+                       | {"has_audio": (f.parent / "audio/song.wav").exists(),
+                          "cover": (st.get("cover") or {}).get("t") if (f.parent / "cover.png").exists() else None})
         except Exception:
             pass
     return out

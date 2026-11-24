@@ -394,7 +394,9 @@ def song_get(sid: str, log_lines: int = 120):
     tail = log.read_text(encoding="utf-8", errors="replace").splitlines()[-log_lines:] if log.exists() else []
     used_by = [p["id"] for p in engine.list_projects()
                if (engine.Project(p["id"]).load()["music"].get("song_id") == sid)]
+    jobs = ([ENGINE.current] if ENGINE.current else []) + ENGINE.queued()
     return {"state": so.load(), "has_audio": so.has_audio(), "log": tail, "busy": song_busy(sid),
+            "cover_busy": (f"song:{sid}", "cover") in jobs, "has_cover": (so.dir / "cover.png").exists(),
             "used_by": used_by}
 
 
@@ -402,8 +404,12 @@ def song_get(sid: str, log_lines: int = 120):
 def song_edit(sid: str, title: str = Body(None), style: str = Body(None), lyrics: str = Body(None),
               engine_: str = Body(None, alias="engine"), brief: str = Body(None), instrumental: bool = Body(None),
               genre: str = Body(None), settings: dict = Body(None), yue: dict = Body(None),
-              style_custom: bool = Body(None), seed: int = Body(None)):
+              style_custom: bool = Body(None), seed: int = Body(None), suno_pick: str = Body(None)):
     so = song_obj(sid)
+    if suno_pick is not None:   # the Suno take the user chose (to download on suno.com and import)
+        if suno_pick and not re.fullmatch(r"[0-9a-fA-F-]{8,64}", suno_pick):
+            raise HTTPException(400, "bad clip id")
+        so.update(lambda st: (st.get("suno") or {}).__setitem__("pick", suno_pick or None))
     if genre is not None:
         so.set(genre=genre_obj(genre))
     if settings is not None:
@@ -426,19 +432,25 @@ def song_edit(sid: str, title: str = Body(None), style: str = Body(None), lyrics
 
 @app.post("/api/songs/{sid}/run")
 def song_run(sid: str, task: str = Body(...), clip_id: str = Body(None), confirm: bool = Body(False),
-             new_seed: bool = Body(False)):
+             new_seed: bool = Body(False), prompt: str = Body(None)):
     so = song_obj(sid)
     if song_busy(sid):
         raise HTTPException(409, "this song already has a job running or queued")
     if task == "draft":
-        if not so.load()["brief"].strip():
-            raise HTTPException(400, "the song has no brief")
+        st = so.load()
+        if not st["brief"].strip() and not st.get("genre"):
+            raise HTTPException(400, "the song has no brief or category")
         so.set(status="drafting", msg="")
         ENGINE.submit(f"song:{sid}", "draft")
     elif task == "generate":
         if so.load()["engine"] not in ("yue2", "suno"):
             raise HTTPException(400, "choose YuE2 or Suno first")
         ENGINE.submit(f"song:{sid}", "generate", new_seed=new_seed)
+    elif task == "cover":   # (re)make the cover art; prompt = the user's own image prompt (else Claude writes one)
+        if prompt is not None and len(prompt) > 2000:
+            raise HTTPException(400, "prompt too long")
+        so.set(cover_error=None)
+        ENGINE.submit(f"song:{sid}", "cover", prompt=(prompt or "").strip() or None)
     elif task == "suno_download":
         if not re.fullmatch(r"[0-9a-fA-F-]{8,64}", clip_id or ""):
             raise HTTPException(400, "bad clip id")
@@ -446,6 +458,38 @@ def song_run(sid: str, task: str = Body(...), clip_id: str = Body(None), confirm
     else:
         raise HTTPException(400, "unknown task")
     so.log(f"queued: {task}")
+    return {"ok": True}
+
+
+async def _save_upload(request, so, name):
+    stem, ext = Path(name).stem, Path(name).suffix.lower()
+    safe = (re.sub(r"[^\w.-]+", "_", stem).strip("._") or "song")[:60] + ext
+    d = so.dir / "music" / f"upload_{time.strftime('%Y%m%d_%H%M%S')}"
+    d.mkdir(parents=True, exist_ok=True)
+    size = 0
+    with open(d / safe, "wb") as fh:
+        async for chunk in request.stream():
+            size += len(chunk)
+            if size > 300 * 1024 * 1024:
+                raise HTTPException(413, "file too large (300 MB max)")
+            fh.write(chunk)
+    so.log(f"uploaded {name} ({size // 1024} KB)")
+    return (d / safe).relative_to(so.dir).as_posix()
+
+
+@app.post("/api/songs/{sid}/import")
+async def song_import_into(sid: str, request: Request, name: str = "song.mp3", clip_id: str = None):
+    """Audio for an existing song, e.g. the Suno take the user picked and downloaded on suno.com themselves."""
+    so = song_obj(sid)
+    if Path(name).suffix.lower() not in AUDIO_EXT:
+        raise HTTPException(400, f"unsupported audio type {Path(name).suffix or '(none)'}")
+    if clip_id and not re.fullmatch(r"[0-9a-fA-F-]{8,64}", clip_id):
+        raise HTTPException(400, "bad clip id")
+    if song_busy(sid):
+        raise HTTPException(409, "this song already has a job running or queued")
+    path = await _save_upload(request, so, name)
+    so.set(status="generating", msg="", needs=None)
+    ENGINE.submit(f"song:{sid}", "import", path=path, clip_id=clip_id)
     return {"ok": True}
 
 

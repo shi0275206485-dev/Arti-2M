@@ -173,7 +173,15 @@ class Engine:
     def _song_job(self, sid, task, kw):
         s = studio.Song(sid)
         try:
-            getattr(self, "song_" + task)(s, **kw)
+            try:
+                getattr(self, "song_" + task)(s, **kw)
+            except Exception as e:
+                if task != "cover" or isinstance(e, NeedsUser):
+                    raise
+                # cover art is optional: a failure must not turn a finished song into an error
+                tb = "" if isinstance(e, Cancelled) else "\n" + traceback.format_exc()
+                s.log(f"cover: ERROR {e}{tb}")
+                s.set(cover_error=str(e)[:300])
         except NeedsUser as e:
             s.log(f"{task}: waiting for you - {e}")
             s.set(status="needs", msg=str(e))
@@ -677,8 +685,10 @@ class Engine:
         (s.dir / "lyrics.txt").write_text(st["lyrics"], encoding="utf-8")
         if st["engine"] == "suno":
             lines = []
-            rc = self.sh(s, [SCRIPTS / "suno_music.py", "--root", ".", "generate", "--style", st["style"],
-                             "--title", st["title"] or "Untitled"]
+            # Suno makes 2 takes per call. Download nothing yet: the user listens on suno.com and picks one
+            # (a download costs a Suno download credit; the Free plan has none, so then they import it by hand).
+            rc = self.sh(s, [SCRIPTS / "suno_music.py", "--root", ".", "generate", "--no-download", "--style",
+                             st["style"], "--title", st["title"] or "Untitled"]
                          + (["--instrumental"] if inst else ["--lyrics-file", "lyrics.txt"]),
                          check=False, capture=lines)
             run = self._tagged(lines, "SUNO_RUN")
@@ -688,8 +698,9 @@ class Engine:
                 return self._song_needs(s, lines)
             if rc != 0:
                 raise RuntimeError("Suno generation failed (see the log)")
-            ok = [c for c in run["clips"] if c["status"] == "complete"]
-            return self._song_ready(s, {"source": "suno", "clip_id": ok[0]["id"] if ok else None})
+            s.set(status="needs", needs={"reason": "pick"}, msg="pick")
+            s.log("Suno made 2 takes: listen to both on suno.com, then pick one on the song page")
+            return
         self.comfy(s, "stop")   # YuE2 needs the whole GPU
         slug = re.sub(r"[^A-Za-z0-9]+", "_", st["title"]).strip("_")[:20].strip("_") or "song"
         t0 = time.time() - 2
@@ -719,8 +730,41 @@ class Engine:
             st["runs"].append(info)
             if info.get("clip_id") and st.get("suno"):
                 st["suno"]["chosen"] = info["clip_id"]
-        s.update(f)
+        st = s.update(f)
         s.log(f"song ready ({info['source']}, {float(dur or 0):.1f}s)")
+        if not st.get("cover"):   # first finished take: make cover art (later takes keep it; the page can redo it)
+            self.submit(f"song:{s.id}", "cover")
+
+    def song_cover(self, s, prompt=None, new_seed=False):
+        """Cover art: Claude turns title/style/lyrics into an image prompt (or the user's own prompt is used),
+        then the t2i workflow renders a square image -> songs/<id>/cover.png (+ covers/ history)."""
+        st = s.load()
+        old = st.get("cover") or {}
+        idea = ""
+        if not prompt:
+            try:
+                r = brain.cover_prompt(st["title"], st["style"], st.get("lyrics") or "", st.get("instrumental"),
+                                       st.get("genre"), st.get("brief") or "")
+                prompt, idea = r["prompt"], r["idea"]
+                s.log(f"cover idea: {idea}")
+            except Exception as e:   # no Claude key / API trouble: a plain prompt from the song's own words
+                s.log(f"cover: Claude unavailable ({str(e)[:120]}), using a simple prompt")
+                prompt = (f"evocative atmospheric scene capturing the mood of this music: {st['style'] or 'a song'}; "
+                          "one clear subject, cinematic lighting, bold colours")
+        seed = (old.get("seed", 7) + 1) if (new_seed or old) else 7
+        was_running = subprocess.run([PY, SCRIPTS / "comfy_server.py", "status"], capture_output=True,
+                                     text=True).stdout.startswith("running")
+        self.ensure_comfy(s)
+        lines = []
+        try:
+            self.sh(s, [SCRIPTS / "gen_cover.py", "--prompt", prompt, "--seed", seed], capture=lines)
+        finally:
+            if not was_running and not any(not j[0].startswith("song:") for j in self.queued()):
+                self.comfy(s, "stop")   # give the GPU/RAM back unless an MV job is waiting for ComfyUI
+        f = next((ln.split(" ", 1)[1] for ln in lines if ln.startswith("COVER_FILE ")), None)
+        s.update(lambda x: x.update(cover={"file": f, "prompt": prompt, "idea": idea, "seed": seed, "t": time.time()},
+                                    cover_error=None))
+        s.log("cover art ready")
 
     def song_suno_download(self, s, clip_id, confirm=False):
         lines = []
@@ -732,9 +776,11 @@ class Engine:
             raise RuntimeError("Suno download failed (see the log)")
         self._song_ready(s, {"source": "suno", "clip_id": clip_id})
 
-    def song_import(self, s, path):
+    def song_import(self, s, path, clip_id=None):
         self.sh(s, [SCRIPTS / "suno_music.py", "--root", ".", "import", path])
-        self._song_ready(s, {"source": "upload", "file": path})
+        # clip_id: a Suno take the user downloaded on suno.com themselves (no download credit needed)
+        self._song_ready(s, {"source": "suno", "clip_id": clip_id, "file": path, "manual": True} if clip_id
+                         else {"source": "upload", "file": path})
 
     # ================================================================ user actions
     def task_regen_music(self, p):

@@ -190,6 +190,28 @@ def song_draft(brief, engine="YuE2", instrumental=False, genre=None, settings=No
     return r
 
 
+# ---------------------------------------------------------------- song cover art
+COVER_SCHEMA = _obj({"prompt": S, "idea": S})
+COVER_SYSTEM = """You are an album-cover art director. From a song's title, style and lyrics, design ONE striking
+square cover image and write the prompt for a text-to-image model (Qwen Image).
+- Capture the song's central image or metaphor and its mood; pick a clear art direction (photo, illustration,
+  3D render, painting, collage, graphic...) and a colour palette that fits the genre.
+- One clear subject, simple bold composition that still reads as a small thumbnail.
+- The image must contain NO text, letters, title, logo or signage (the model renders text as garbage).
+  Do not depict real artists or copyrighted characters. People are fine but optional; avoid hands as the subject.
+- prompt: one dense English paragraph (subject, setting, composition, lighting, palette, medium/style), max 80 words.
+  Never write the words "album", "cover", "poster" or the song title in the prompt (they make the model add text).
+- idea: one short sentence explaining the concept, in the same language as the song's title/lyrics."""
+
+
+def cover_prompt(title, style, lyrics="", instrumental=False, genre=None, brief=""):
+    text = (f"Title: {title or '(untitled)'}\nStyle: {style}\n"
+            + (f"Category: {genre.get('name')}\n" if genre else "")
+            + (f"Brief: {brief}\n" if brief else "")
+            + ("Instrumental (no lyrics).\n" if instrumental or not lyrics.strip() else f"Lyrics:\n{lyrics[:4000]}\n"))
+    return _call(COVER_SYSTEM, [{"type": "text", "text": text}], COVER_SCHEMA, effort="low", max_tokens=8000)
+
+
 # ---------------------------------------------------------------- shot design
 SIZES = ["close-up", "medium close-up", "medium", "wide"]
 KINDS = ["solo", "duo", "stage_wide", "back_view", "empty"]

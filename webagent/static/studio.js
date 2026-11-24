@@ -11,7 +11,7 @@ const fmtDur = (s) => s ? `${Math.floor(s / 60)}:${String(Math.round(s % 60)).pa
 function songCard(s) {
   const busy = ["drafting", "generating"].includes(s.status);
   return `<div class="scard" data-id="${esc(s.id)}">
-    <div class="cover" style="${coverStyle(s.id)}">
+    <div class="cover" style="${coverStyle(s.id, coverUrl(s.id, s.cover))}">
       ${s.has_audio ? `<button class="play" data-play="${esc(s.id)}" aria-label="Play">▶</button>` : ""}
       ${s.duration ? `<span class="dur">${fmtDur(s.duration)}</span>` : ""}
       ${busy ? `<span class="busy">${t(SONG_STATUS[s.status])}…</span>` : ""}
@@ -101,7 +101,7 @@ async function refreshSong() {
   if (!curSong || tab !== "music") return;
   songData = await api(`/api/songs/${curSong}`);
   const log = $("#slog");
-  const key = JSON.stringify([LANG, songData.state, songData.has_audio, songData.busy, songData.used_by]);
+  const key = JSON.stringify([LANG, songData.state, songData.has_audio, songData.busy, songData.used_by, songData.cover_busy, songData.has_cover]);
   if (savesPending) return;   // a redraw now would drop clicks that are still being saved
   if (key !== songKey && !document.activeElement?.closest?.("#songview .edit")) { songKey = key; renderSong(); }
   else if (log) { const atBottom = log.scrollTop + log.clientHeight >= log.scrollHeight - 20; log.textContent = songData.log.join("\n"); if (atBottom) log.scrollTop = log.scrollHeight; }
@@ -109,7 +109,8 @@ async function refreshSong() {
 
 const SONG_NEEDS = {
   not_signed_in: "先登录 Suno（下方按钮），再点「生成」。",
-  requires_credit: "下载这首歌要消耗 1 个 Suno 下载额度。可以批准下载，或者在 suno.com 自己下载后用左侧「导入音频文件」导入。",
+  requires_credit: "下载这首歌要消耗 1 个 Suno 下载额度。可以批准下载，或者在 suno.com 自己下载后导入（见下面的两首）。",
+  pick: "Suno 生成了 2 首：先在 suno.com 试听，再在下面选一首。",
 };
 
 // ---------- click-to-choose song settings (lists come from /api/song_options = webagent/studio.py OPTIONS)
@@ -239,7 +240,17 @@ function renderSong() {
   const working = d.busy || ["drafting", "generating"].includes(st.status);
   const cur0 = st.current || {};
   let h = `<header><h1>${esc(st.title || t("（未命名）"))}</h1><div class="hdr-right"><span class="pill">${t(SONG_STATUS[st.status] || st.status)}</span></div></header>`;
-  h = `<div class="songhead"><div class="cover big" style="${coverStyle(st.id)}"></div><div>${h}</div></div>`;
+  // cover art: made automatically when the first take is ready (Claude reads title/style/lyrics -> Qwen Image)
+  const cv = st.cover || {}, cimg = d.has_cover ? coverUrl(st.id, cv.t || 1) : "";
+  const cmsg = d.cover_busy ? `<span class="badge">${t("封面生成中…")}</span>`
+    : st.cover_error ? `<span class="issues small">${t("封面生成失败：{0}", esc(st.cover_error))}</span>`
+    : cv.idea ? `<span class="muted small">${esc(cv.idea)}</span>` : "";
+  const cbox = `<div class="coverctl">${cmsg}
+    <button id="c_regen" class="small" ${d.busy ? "disabled" : ""}>${t(d.has_cover ? "重新生成封面" : "生成封面")}</button>
+    <details><summary class="small">${t("自己写封面提示词")}</summary>
+      <textarea id="c_prompt" rows="3" placeholder="${esc(t("英文描述画面，留空则由 Claude 根据歌名、曲风和歌词来写"))}">${esc(cv.prompt || "")}</textarea>
+      <button id="c_custom" class="small" ${d.busy ? "disabled" : ""}>${t("用这个提示词生成")}</button></details></div>`;
+  h = `<div class="songhead">${cimg ? `<a class="cover big" style="${coverStyle(st.id, cimg)}" href="${cimg}" target="_blank" rel="noopener"></a>` : `<div class="cover big" style="${coverStyle(st.id)}"></div>`}<div>${h}${cbox}</div></div>`;
   if (d.has_audio) {
     h += `<audio controls src="${SF("audio/song.wav")}?t=${st.runs.length}" style="width:100%"></audio>
       <p class="muted">${t(ENGINE_LABEL[cur0.source] || cur0.source || "")} · ${fmtDur(st.duration)}` +
@@ -265,17 +276,31 @@ function renderSong() {
       <div id="s_lyrbox" class="${st.instrumental ? "hidden" : ""}"><div class="label">${t("歌词")}</div><textarea id="s_lyrics" rows="16" placeholder="[Verse]&#10;...&#10;[Chorus]&#10;...">${esc(st.lyrics)}</textarea></div></div>`;
     if (st.instrumental && st.engine === "yue2") h += `<p class="muted">${t("YuE2 纯音乐：先写谱，再把旋律移到乐器声部，然后生成（比有歌词的多一步规划）。不保证完全没有人声，请试听。")}</p>`;
     if (st.engine === "suno") h += `<div id="sunobox" class="muted">${t("正在读取 Suno 账户…")}</div>`;
+    // Suno makes 2 takes per generation: listen on suno.com (clips carry no playable audio of their own), pick one.
+    // With download credits the app downloads it (1 credit, after you confirm); without (Free plan) you download it
+    // on suno.com and import the file into this song.
     const clips = st.suno?.clips || [];
     if (clips.length) {
-      h += `<div class="label">${t("Suno 生成的歌（一次 2 首，选一首用）")}</div><div class="clips">` + clips.map((c) => {
+      const credits = sunoInfo?.signed_in ? sunoInfo.download_credits : null;
+      const canDownload = credits > 0, pick = st.suno?.pick;
+      h += `<div class="label">${t("Suno 生成的 2 首：先在 suno.com 试听，再选一首")}</div>
+        <p class="muted small">${credits == null ? t("正在读取下载额度…")
+          : canDownload ? t("你有 {0} 个下载额度：选中的那首由应用下载（消耗 1 个）。", credits)
+          : t("你的 Suno 账户没有下载额度（免费版）：选中后在 suno.com 自己下载 MP3，再导入到这首歌。")}</p><div class="clips">` + clips.map((c) => {
         const used = cur0.source === "suno" && cur0.clip_id === c.id && d.has_audio;
-        const needCredit = st.needs?.reason === "requires_credit" && st.needs.id === c.id;
-        const btn = used ? `<span class="badge ok">${t("正在使用")}</span>` : c.status !== "complete" ? ""
-          : needCredit ? `<button class="primary" data-sdl="${esc(c.id)}" data-credit="1">${t("批准：消耗 1 个下载额度")}</button>`
-          : `<button data-sdl="${esc(c.id)}" ${working ? "disabled" : ""}>${t("下载并使用这首")}</button>`;
-        return `<div class="clip ${used ? "chosen" : ""}">${c.cover ? `<img src="${esc(c.cover)}" alt="">` : ""}<div>
-          <b>${esc(c.title || c.id.slice(0, 8))}</b> <span class="muted">${c.duration ? fmtDur(c.duration) : ""} · ${esc(c.status)}</span><br>
-          ${c.song_url ? `<a href="${esc(c.song_url)}" target="_blank" rel="noopener">${t("在 suno.com 试听 / 手动下载")}</a>` : ""} ${btn}</div></div>`;
+        const picked = !used && pick === c.id && !canDownload;
+        const btn = used ? `<span class="badge ok">${t("正在使用")}</span>` : c.status !== "complete" ? `<span class="muted">${esc(c.status)}</span>`
+          : canDownload ? `<button class="primary" data-sdl="${esc(c.id)}" ${working ? "disabled" : ""}>${t("用这首（下载，消耗 1 个下载额度）")}</button>`
+          : picked ? `<button data-unpick="1" class="link">${t("换一首")}</button>`
+          : `<button data-pick="${esc(c.id)}" ${working || credits == null ? "disabled" : ""}>${t("选这首")}</button>`;
+        return `<div class="clip ${used || picked ? "chosen" : ""}">${c.cover ? `<img src="${esc(c.cover)}" alt="">` : ""}<div style="flex:1">
+          <b>${esc(c.title || c.id.slice(0, 8))}</b> <span class="muted">${c.duration ? fmtDur(c.duration) : ""}</span><br>
+          ${c.song_url ? `<a href="${esc(c.song_url)}" target="_blank" rel="noopener">${t("在 suno.com 试听 ↗")}</a>` : ""} ${btn}
+          ${picked ? `<div class="importbox">
+            <ol><li>${t("在 suno.com 打开这首（上面的链接）→ 「⋯」→ 下载 → MP3")}</li>
+              <li>${t("选择下载好的文件，导入到这首歌：")}</li></ol>
+            <input type="file" data-impclip="${esc(c.id)}" accept="audio/*,.mp3,.wav,.flac,.m4a,.ogg">
+            <p class="muted small">${t("如果 suno.com 也不让你下载这首，免费版就只能在线听；可以换 YuE2 本地生成。")}</p></div>` : ""}</div></div>`;
       }).join("") + `</div>`;
     }
     const gen = d.has_audio || st.runs.length ? (st.engine === "suno" ? t("重新生成（消耗 Suno 积分）") : t("换种子重新生成")) : (st.engine === "suno" ? t("用 Suno 生成（消耗 Suno 积分）") : t("用 YuE2 生成"));
@@ -360,31 +385,58 @@ function renderSong() {
     songKey = ""; refreshSong();
   };
   V.querySelectorAll("[data-sdl]").forEach((b) => b.onclick = async () => {
-    const credit = !!b.dataset.credit;
-    if (credit && !confirm(t("确定消耗 1 个 Suno 下载额度下载这首歌？"))) return;
+    if (!confirm(t("确定消耗 1 个 Suno 下载额度下载这首歌？"))) return;
     b.disabled = true;
-    await api(`/api/songs/${curSong}/run`, { task: "suno_download", clip_id: b.dataset.sdl, confirm: credit });
+    try { await api(`/api/songs/${curSong}/run`, { task: "suno_download", clip_id: b.dataset.sdl, confirm: true }); }
+    catch (e) { b.disabled = false; return alert(t("没有开始：{0}", e.message || e)); }
     songKey = ""; refreshSong();
   });
+  V.querySelectorAll("[data-pick], [data-unpick]").forEach((b) => b.onclick = async () => {
+    await api(`/api/songs/${curSong}`, { suno_pick: b.dataset.pick || "" }); songKey = ""; refreshSong();
+  });
+  V.querySelectorAll("[data-impclip]").forEach((inp) => inp.onchange = async () => {
+    const f = inp.files[0]; if (!f) return;
+    inp.disabled = true;
+    const r = await fetch(`/api/songs/${curSong}/import?name=${encodeURIComponent(f.name)}&clip_id=${encodeURIComponent(inp.dataset.impclip)}`, { method: "POST", body: f });
+    if (!r.ok) { inp.disabled = false; return alert(t("导入失败：{0}", await r.text())); }
+    songKey = ""; refreshSong();
+  });
+  const runCover = async (b, prompt) => {
+    b.disabled = true;
+    try { await api(`/api/songs/${curSong}/run`, { task: "cover", prompt }); }
+    catch (e) { b.disabled = false; return alert(t("没有开始：{0}", e.message || e)); }
+    songKey = ""; refreshSong();
+  };
+  $("#c_regen").onclick = (e) => runCover(e.target, "");
+  $("#c_custom").onclick = (e) => {
+    const p = $("#c_prompt").value.trim();
+    if (!p) return alert(t("先写提示词（或点「重新生成封面」让 Claude 写）"));
+    runCover(e.target, p);
+  };
   if ($("#s_tomv")) $("#s_tomv").onclick = () => {
     location.hash = "#mv"; fillSongSelect(curSong);
     if (!$("#ntitle").value) $("#ntitle").value = st.title;
     setTimeout(() => $("#nbrief").focus(), 50);
   };
   V.querySelectorAll("[data-openp]").forEach((a) => a.onclick = (e) => { e.preventDefault(); select(a.dataset.openp); });
-  if (st.engine === "suno") loadSuno(false);
+  if (st.engine === "suno") {
+    const known = sunoInfo != null;   // the take buttons depend on the download credits: redraw once they are known
+    loadSuno(false).then(() => { if (!known && (st.suno?.clips || []).length) { songKey = ""; refreshSong().catch(() => {}); } });
+  }
 }
 
 // ---------- sidebar actions
+// one button: it always opens the song page. With a brief or a category (and Claude connected) Claude drafts
+// title/style/lyrics first; otherwise it is a blank song to write on that page (the category pre-fills the style).
 $("#screate").onclick = async () => {
-  const brief = $("#sbrief").value.trim(), genre = $("#sgenre").value;
-  if (!brief && !genre) return alert(t("选一个分类或写一段描述，Claude 据此写歌"));
-  const r = await api("/api/songs", { brief, genre, draft: true, engine: $("#sengine").value, instrumental: $("#sinst").checked });
-  $("#sbrief").value = ""; await refreshSongs(); selectSong(r.id);
-};
-$("#sblank").onclick = async () => {
-  const r = await api("/api/songs", { title: t("新歌"), genre: $("#sgenre").value, draft: false, engine: $("#sengine").value, instrumental: $("#sinst").checked });
-  await refreshSongs(); selectSong(r.id);
+  const brief = $("#sbrief").value.trim(), genre = $("#sgenre").value, b = $("#screate");
+  const draft = !!(brief || genre) && claudeOk;
+  b.disabled = true;
+  try {
+    const r = await api("/api/songs", { brief, genre, draft, title: draft ? "" : t("新歌"), engine: $("#sengine").value, instrumental: $("#sinst").checked });
+    $("#sbrief").value = ""; await refreshSongs(); selectSong(r.id);
+  } catch (e) { alert(t("没有开始：{0}", e.message || e)); }
+  finally { b.disabled = false; }
 };
 $("#sfile").onchange = () => { if ($("#sfile").files[0]) $("#simport").click(); };
 $("#simport").onclick = async () => {

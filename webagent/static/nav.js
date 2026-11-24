@@ -27,7 +27,10 @@ function route() {
 function setTab(name) { location.hash = name === "music" ? (curSong ? "#song/" + encodeURIComponent(curSong) : "#library") : (cur ? "#mv/" + encodeURIComponent(cur) : "#mv"); }
 
 // generated cover art: a stable gradient per id (no images needed)
-function coverStyle(id) {
+// songs with cover art (songs/<id>/cover.png, `t` = when it was made) show the image instead
+const coverUrl = (id, t) => t ? `/songfiles/${encodeURIComponent(id)}/cover.png?t=${t}` : "";
+function coverStyle(id, img) {
+  if (img) return `background:#111 url('${img}') center/cover no-repeat`;
   let h = 0;
   for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   const a = h % 360, b = (a + 40 + (h >> 9) % 120) % 360;
@@ -39,7 +42,7 @@ function coverStyle(id) {
 function playSong(s) {
   $("#player").classList.remove("hidden");
   document.body.classList.add("playing");
-  $("#pcover").style.cssText = coverStyle(s.id);
+  $("#pcover").style.cssText = coverStyle(s.id, coverUrl(s.id, s.cover));
   $("#ptitle2").textContent = s.title || s.id;
   $("#psub").textContent = [t(ENGINE_LABEL[s.engine] || s.engine), s.instrumental ? t("纯音乐") : "", fmtDur(s.duration)].filter(Boolean).join(" · ");
   const a = $("#paudio");

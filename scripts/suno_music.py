@@ -119,22 +119,32 @@ def wait_complete(ids, timeout=900):
 
 
 def cmd_generate(args):
-    if args.instrumental:
-        req = {"style": args.style, "instrumental": True}
+    if args.run:   # resume an earlier run: same request + idempotency key = Suno returns the same songs, no charge
+        run = ROOT / args.run
+        req = json.loads((run / "request.json").read_text(encoding="utf-8"))
+        log(f"resuming {run.name} (same idempotency key: no new songs, no new charge)")
     else:
-        if not args.lyrics_file:
-            raise SystemExit("--lyrics-file is required unless --instrumental")
-        req = {"style": args.style, "lyrics": Path(args.lyrics_file).read_text(encoding="utf-8")}
-    if args.title:
-        req["title"] = args.title[:256]
-    if args.model:
-        req["model"] = args.model
-    run = ROOT / "music" / f"suno_{time.strftime('%Y%m%d_%H%M%S')}"
-    run.mkdir(parents=True, exist_ok=True)
-    (run / "request.json").write_text(json.dumps(req, ensure_ascii=False, indent=2), encoding="utf-8")
-    log(f"creating songs ({args.model or 'plan default model'}): {args.style[:120]}")
+        if not args.style:
+            raise SystemExit("--style is required")
+        if args.instrumental:
+            req = {"style": args.style, "instrumental": True}
+        else:
+            if not args.lyrics_file:
+                raise SystemExit("--lyrics-file is required unless --instrumental")
+            req = {"style": args.style, "lyrics": Path(args.lyrics_file).read_text(encoding="utf-8")}
+        if args.title:
+            req["title"] = args.title[:256]
+        if args.model:
+            req["model"] = args.model
+        run = ROOT / "music" / f"suno_{time.strftime('%Y%m%d_%H%M%S')}"
+        run.mkdir(parents=True, exist_ok=True)
+        (run / "request.json").write_text(json.dumps(req, ensure_ascii=False, indent=2), encoding="utf-8")
+        log(f"creating songs ({args.model or 'plan default model'}): {args.style[:120]}")
     r = sa.call("audio-create", dict(req, idempotency_key=run.name))
-    ids = r.get("clip_ids") or [r["id"]]
+    ids = r.get("clip_ids") or ([r["id"]] if r.get("id") else [])
+    if not ids:   # never lose a paid generation silently: show what Suno answered
+        raise SystemExit(f"Suno's reply had no song ids: {json.dumps(r, ensure_ascii=False)[:400]}\n"
+                         f"(the songs may still be in your Suno library; resume with: generate --run {run.relative_to(ROOT).as_posix()})")
     log(f"Suno clips: {', '.join(ids)}")
     clips = wait_complete(ids)
     info = [{"id": c.get("id"), "title": c.get("title"), "status": c.get("status"), "error": c.get("error"),
@@ -222,7 +232,9 @@ def main():
     sub.add_parser("login")
     sub.add_parser("status")
     g = sub.add_parser("generate")
-    g.add_argument("--style", required=True)
+    g.add_argument("--style")
+    g.add_argument("--run", metavar="music/suno_<ts>",
+                   help="resume that earlier run (same request + idempotency key: no new songs, no charge)")
     g.add_argument("--lyrics-file")
     g.add_argument("--instrumental", action="store_true", help="no vocals; no lyrics needed")
     g.add_argument("--title")
