@@ -1,6 +1,7 @@
 """MV Agent web server. Run:  .venv\\Scripts\\python -m webagent  (then open http://127.0.0.1:8700)"""
 import json
 import re
+import shutil
 import sys
 import time
 from pathlib import Path
@@ -24,6 +25,26 @@ def proj(pid):
     if not p.path.exists():
         raise HTTPException(404, "no such project")
     return p
+
+
+TRASH = engine.ROOT / "trash"
+
+
+def to_trash(kind, d, name):
+    """Deleting a song / MV project moves its folder to trash/<kind>/<id>_<time>/ (recoverable by moving it back);
+    nothing generated is erased."""
+    dest = TRASH / kind / f"{name}_{time.strftime('%Y%m%d_%H%M%S')}"
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        shutil.move(str(d), str(dest))
+    except OSError as e:   # e.g. a file still open (audio playing in another program)
+        raise HTTPException(409, f"could not move the folder (a file may be in use): {e}")
+    return dest.relative_to(engine.ROOT).as_posix()
+
+
+def jobs_for(target):
+    jobs = ([ENGINE.current] if ENGINE.current else []) + ENGINE.queued()
+    return [j for j in jobs if j[0] == target]
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -103,6 +124,16 @@ def project(pid: str, log_lines: int = 200):
             "stages": engine.STAGES,
             "has_audio": (p.dir / "audio/song.wav").exists(),
             "plate": (p.dir / "shots/plates/stage.png").exists()}
+
+
+@app.post("/api/projects/{pid}/delete")
+def project_delete(pid: str):
+    if not re.fullmatch(r"[\w-]{1,80}", pid):
+        raise HTTPException(400, "bad project id")
+    p = proj(pid)
+    if jobs_for(pid):
+        raise HTTPException(409, "this MV has a job running or queued: stop it first")
+    return {"ok": True, "trash": to_trash("projects", p.dir, pid)}
 
 
 @app.post("/api/projects/{pid}/approve/{stage}")
@@ -428,6 +459,15 @@ def song_edit(sid: str, title: str = Body(None), style: str = Body(None), lyrics
                             "brief": brief, "instrumental": instrumental}.items() if v is not None}
     so.set(**kw)
     return {"ok": True}
+
+
+@app.post("/api/songs/{sid}/delete")
+def song_delete(sid: str):
+    so = song_obj(sid)
+    if song_busy(sid):
+        raise HTTPException(409, "this song has a job running or queued: stop it first")
+    # MV projects keep their own copy of the audio/score, so they still work without the library song
+    return {"ok": True, "trash": to_trash("songs", so.dir, sid)}
 
 
 @app.post("/api/songs/{sid}/run")

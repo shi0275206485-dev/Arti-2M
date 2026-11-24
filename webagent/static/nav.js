@@ -53,3 +53,25 @@ $("#pclose").onclick = () => { $("#paudio").pause(); $("#player").classList.add(
 
 window.addEventListener("hashchange", route);
 route();
+
+// ---------- delete a song (Music Lib) or an MV project (MV Lib): the server moves the folder to trash/
+async function deleteItem(kind, id, title) {
+  const song = kind === "song";
+  const msg = song ? t("删除歌曲「{0}」？\n文件夹会移到 trash/songs/（需要时可以手动移回来）。已经用这首歌做的 MV 不受影响。", title || id)
+    : t("删除 MV「{0}」？\n项目文件夹（含所有画面、视频和成片）会移到 trash/projects/（需要时可以手动移回来）。", title || id);
+  if (!confirm(msg)) return false;
+  try { await api(`/api/${song ? "songs" : "projects"}/${encodeURIComponent(id)}/delete`, {}); }
+  catch (e) {
+    let m = e.message || String(e);
+    try { m = JSON.parse(m).detail || m; } catch (_) { /* plain text */ }
+    alert(t("没有删除：{0}", m)); return false;
+  }
+  if (song) {
+    if (curSong === id) { curSong = null; location.hash = "#library"; }
+    await refreshSongs();
+  } else {
+    if (cur === id) { cur = null; location.hash = "#mvlib"; }
+    await refreshList();
+  }
+  return true;
+}

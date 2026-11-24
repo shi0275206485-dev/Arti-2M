@@ -15,12 +15,15 @@ function songCard(s) {
       ${s.has_audio ? `<button class="play" data-play="${esc(s.id)}" aria-label="Play">▶</button>` : ""}
       ${s.duration ? `<span class="dur">${fmtDur(s.duration)}</span>` : ""}
       ${busy ? `<span class="busy">${t(SONG_STATUS[s.status])}…</span>` : ""}
+      ${busy ? "" : `<button class="del" data-del="${esc(s.id)}" title="${esc(t("删除"))}" aria-label="Delete">🗑</button>`}
     </div>
     <div class="st">${esc(s.title || t("（未命名）"))}</div>
     <div class="sub">${t(ENGINE_LABEL[s.engine] || s.engine)}${s.instrumental ? " · " + t("纯音乐") : ""}${s.genre ? " · " + esc(gName(s.genre)) : ""} · ${t(SONG_STATUS[s.status] || s.status)}</div></div>`;
 }
 function bindSongCards(box) {
   box.querySelectorAll(".scard").forEach((c) => c.onclick = (e) => {
+    const del = e.target.closest("[data-del]");
+    if (del) { e.stopPropagation(); const s = libSongs.find((x) => x.id === del.dataset.del); deleteItem("song", del.dataset.del, s?.title); return; }
     const p = e.target.closest("[data-play]");
     if (p) { e.stopPropagation(); playSong(libSongs.find((s) => s.id === p.dataset.play)); return; }
     selectSong(c.dataset.id);
@@ -239,7 +242,8 @@ function renderSong() {
   const d = songData, st = d.state, V = $("#songview");
   const working = d.busy || ["drafting", "generating"].includes(st.status);
   const cur0 = st.current || {};
-  let h = `<header><h1>${esc(st.title || t("（未命名）"))}</h1><div class="hdr-right"><span class="pill">${t(SONG_STATUS[st.status] || st.status)}</span></div></header>`;
+  let h = `<header><h1>${esc(st.title || t("（未命名）"))}</h1><div class="hdr-right"><span class="pill">${t(SONG_STATUS[st.status] || st.status)}</span>
+    <button id="s_delete" class="danger" ${working ? `disabled title="${esc(t("任务进行中，不能删除"))}"` : ""}>${t("删除")}</button></div></header>`;
   // cover art: made automatically when the first take is ready (Claude reads title/style/lyrics -> Qwen Image)
   const cv = st.cover || {}, cimg = d.has_cover ? coverUrl(st.id, cv.t || 1) : "";
   const cmsg = d.cover_busy ? `<span class="badge">${t("封面生成中…")}</span>`
@@ -401,6 +405,7 @@ function renderSong() {
     if (!r.ok) { inp.disabled = false; return alert(t("导入失败：{0}", await r.text())); }
     songKey = ""; refreshSong();
   });
+  $("#s_delete").onclick = () => deleteItem("song", st.id, st.title);
   const runCover = async (b, prompt) => {
     b.disabled = true;
     try { await api(`/api/songs/${curSong}/run`, { task: "cover", prompt }); }

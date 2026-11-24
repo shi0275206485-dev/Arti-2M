@@ -34,14 +34,19 @@ async function refreshList() {
     const flag = st.includes("error") ? "出错" : st.includes("waiting") ? "等待确认" : st.includes("running") ? "进行中" : "";
     const cls = st.includes("error") ? "bad" : st.includes("waiting") ? "warn" : st.includes("running") ? "run" : done === st.length ? "ok" : "";
     return `<div class="pcard" data-id="${esc(p.id)}">
-      <div class="cover wide" style="${coverStyle(p.id)}">${flag ? `<span class="flag ${cls}">${t(flag)}</span>` : ""}</div>
+      <div class="cover wide" style="${coverStyle(p.id)}">${flag ? `<span class="flag ${cls}">${t(flag)}</span>` : ""}
+        ${st.includes("running") ? "" : `<button class="del" data-del="${esc(p.id)}" data-title="${esc(p.title)}" title="${esc(t("删除"))}" aria-label="Delete">🗑</button>`}</div>
       <div class="st">${esc(p.title)}</div>
       <div class="bar"><i style="width:${Math.round(100 * done / st.length)}%"></i></div>
       <div class="sub">${t("{0}/{1} 步", done, st.length)} · ${p.mode === "auto" ? t("全自动") : t("确认模式")}</div></div>`;
   });
   $("#plist").innerHTML = cards.join("") || `<p class="muted">${t("还没有 MV 项目：去「MV 制作」新建一个。")}</p>`;
   $("#hprojs").innerHTML = cards.slice(0, 4).join("") || `<p class="muted">${t("还没有 MV 项目。")}</p>`;
-  document.querySelectorAll("#plist .pcard, #hprojs .pcard").forEach((c) => c.onclick = () => select(c.dataset.id));
+  document.querySelectorAll("#plist .pcard, #hprojs .pcard").forEach((c) => c.onclick = (e) => {
+    const del = e.target.closest("[data-del]");
+    if (del) { e.stopPropagation(); deleteItem("mv", del.dataset.del, del.dataset.title); return; }
+    select(c.dataset.id);
+  });
 }
 
 function select(id) {   // the router (nav.js) shows the project page
@@ -420,3 +425,4 @@ applyStatic();
 refreshStatus(); refreshList();
 setInterval(() => { refreshStatus(); refresh().catch(() => {}); }, 2500);
 setInterval(refreshList, 8000);
+$("#pdelete").onclick = () => cur && deleteItem("mv", cur, data?.state?.title);

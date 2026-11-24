@@ -29,7 +29,7 @@ scripts/    analyze_audio.py, comfy_client.py, assemble.py
 
 ## 音乐生成（YuE2，在 WSL 里）
 - 位置：WSL Ubuntu `~/AI-Music/YuE`（YuE2 v0.1.6，`.venv/bin/yue2`），模型已缓存在 `~/.cache/huggingface/hub`。
-- 16GB 显卡必须用 `--low-vram --budget 8`；`--offline` 跳过联网解析（校验从 ~157s 降到 ~7s）。实测 65s 歌曲约 76s 生成。
+- 16GB 显卡必须用 `--low-vram --budget 8`（cfg_scale≠1 时 `gen_music.py` 自动用 budget 12：cfg 多跑一路无条件分支，budget 8 的 6GiB 上限会在生成第一个 token 时 OOM；OOM 重试不能用 `--resume`——它只复用已完成的结果，失败目录改名 `*_oom_b8` 后从头重跑）；`--offline` 跳过联网解析（校验从 ~157s 降到 ~7s）。实测 65s 歌曲约 76s 生成。
 - YuE2 和 ComfyUI 共用显卡，**不能同时运行**：生成音乐前关闭 ComfyUI。
 - 请求格式：`style`（曲风、乐器、人声、语言、BPM）+ `lyrics`（带 `[Verse]`/`[Chorus]` 等段落标签的真实歌词），可选 `seed`、`cot`（full/melody/off）。
 - `score.abc` 含速度 `Q:`、拍号 `M:`、段落标记 `% verse` 等，是 MV 分段的可靠依据。
@@ -82,6 +82,7 @@ scripts/    analyze_audio.py, comfy_client.py, assemble.py
   - **MV 制作**：新建项目时从曲库选一首有音频的歌（`music.source="library"` + `song_id`），描述变为可选（画面想法）。concept 阶段 `brain.concept(brief, song)` 保留歌的标题/曲风/歌词，只设计画面；music 阶段 `import_song` 把音频、乐谱（YuE2 才有）、song_source.json、歌词复制进项目。项目歌曲步骤可"换一首"（`use_song`：概念画面不变，换歌词，分析起重置）。不选歌 = 旧方式（项目内 YuE2）；旧项目照旧。
 - 阶段：concept → music(YuE2) → analysis(--stems) → refs(`scripts/gen_refs.py`) → design(`webagent/design.py` 把 Claude 的分镜行套上表演版 v2 规则模板写成 shot_design.py → build_shots → 舞台底图) → frames(+QC) → videos(+QC) → assemble。模式：review（每个关键节点等用户确认，可改提示词、单镜头重做）/ auto（一路跑完）。
 - 为支持任意项目，脚本加了可选覆盖：`gen_music.py --root`，`gen_frames.py` 读 `MV_FRAME_STYLE`/`MV_KEEP_NEUTRAL`，`gen_videos.py` 读 `MV_VIDEO_STYLE` 和 members.json 的 `video_desc`，`build_shots.py` 用 members.json 的 `noun`。不设这些时行为与原来一致。
+- **删除**：音乐库/MV 库卡片悬停的 🗑 和歌曲页/项目页的「删除」→ `POST /api/songs/<id>/delete`、`/api/projects/<id>/delete`，把整个目录移到 `trash/songs|projects/<id>_<时间>/`（不真删，手动移回即可恢复；`trash/` 不进 git）。有任务在跑或排队时拒绝（409）。删歌不影响已用它做的 MV（项目里有音频/乐谱副本）。
 - 重跑 music/refs/design 会把旧的 frames/clips index.json 改名为 `index_old_<时间>.json`（文件都保留）。
 - **可选 ComfyUI 工作流**：角色 t2i / edit1 / edit2 / edit3 / i2v / lipsync。`scripts/wf_bindings.py` 定义内置默认（原来写死的节点号）和“参数 → [节点, 输入]”映射；脚本从项目的 `workflows/bindings.json` 读取覆盖，没有该文件时行为与原来完全一致。网页“工作流”按钮：每个角色选库里的工作流，或导入 API 格式 JSON（自动猜节点，用户在下拉框核对；视频可映射秒数或帧数+帧率+N×k+1 规则）。用户工作流库在 `workflows/user/` + `workflows/library.json`，项目里存一份副本。
 - **MiniMax H3（库里两条，只用于 i2v，无对口型）**：20 步版 ~15 分钟/镜头，内存紧张时会崩；“8 步加速”版（105:126=True）实测 284s/镜头（含冷加载），运镜比 LTX 稳（LTX 常自己推近）、人群更有动感，需 ~20GB 空闲内存。库条目可带 `est_seconds`（每镜头预计秒数）和 `chunk_budget`（每次 ComfyUI 会话的秒数预算），引擎据此分块；视频阶段按角色分组（先全部 i2v 再全部 lipsync），一个块里不混两个模型。

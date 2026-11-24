@@ -178,3 +178,11 @@ details.yue { margin:6px 0 10px; border:1px solid var(--line); border-radius:10p
   #main { padding:16px; }
 }
 .importbox { margin-top:8px; padding:8px 12px; border:1px dashed var(--line); border-radius:10px; background:#0e0f14; font-size:13px; } .importbox ol { margin:0 0 6px; padding-left:18px; } .importbox input { max-width:420px; }
+
+/* delete: a small bin on library cards (shown on hover) and a red button on song / MV pages */
+.cover .del { position:absolute; left:8px; top:8px; width:30px; height:30px; border-radius:50%; border:0; padding:0;
+  background:#000b; color:#fff; font-size:13px; opacity:0; transition:.15s; cursor:pointer; }
+.scard:hover .del, .pcard:hover .del, .cover .del:focus-visible { opacity:1; }
+.cover .del:hover { background:#c0392b; }
+@media (hover:none) { .cover .del { opacity:.85; } }
+button.danger:hover:not(:disabled) { background:var(--bad); color:#fff; }

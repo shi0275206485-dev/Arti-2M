@@ -167,13 +167,25 @@ def main():
         req_path.write_text(json.dumps(request, ensure_ascii=False, indent=2), encoding="utf-8")
         print("[gen_music] instrumental 3/3: rendering the converted score", flush=True)
     print(f"[gen_music] {run_id}: {request['style']}")
-    proc = run_yue(req_path, args.stage)
+    budget = args.budget
+    # cfg_scale != 1 runs a second (unconditional) pass in the same batch: at budget 8 YuE2 caps itself at 6 GiB
+    # and dies at the first audio token (seen 2026-11-24 with cfg 1.2, 8.6 GiB still free). Start higher.
+    cfg = request.get("cfg_scale", 1.01 if request.get("cot") == "off" else 1.0)
+    if args.stage == "audio" and float(cfg) != 1.0 and budget < 12:
+        budget = 12
+        print(f"[gen_music] cfg_scale {cfg} needs more GPU memory: using budget 12", flush=True)
+    proc = run_yue(req_path, args.stage, budget=budget)
     fail = run_dir / "failure.json"
     if proc.returncode != 0 and fail.exists() and "OutOfMemory" in fail.read_text(encoding="utf-8") \
-            and args.budget < 12:
-        # long/dense songs can outgrow the budget's memory cap at audio synthesis; the GPU usually has room
-        print(f"[gen_music] out of GPU memory at budget {args.budget}; resuming with budget 12", flush=True)
-        proc = run_yue(req_path, args.stage, budget=12, resume=True)
+            and budget < 12:
+        # long/dense songs can outgrow the budget's memory cap at audio synthesis; the GPU usually has room.
+        # --resume only reuses a COMPLETED run (a failed one is "Nonempty output"), so keep the failed attempt
+        # under another name and render again from scratch.
+        kept = run_dir.with_name(f"{run_dir.name}_oom_b{budget:g}")
+        run_dir.rename(kept)
+        print(f"[gen_music] out of GPU memory at budget {budget:g} (kept as {kept.name}); retrying with budget 12",
+              flush=True)
+        proc = run_yue(req_path, args.stage, budget=12)
     elapsed = time.time() - t0
     if proc.returncode != 0:
         fail = run_dir / "failure.json"

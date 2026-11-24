@@ -14,6 +14,7 @@ logs/
 # --- generated media and per-run outputs (large; regenerate with the pipeline) ---
 projects/
 songs/
+trash/
 music/
 audio/
 stems/
