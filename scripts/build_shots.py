@@ -3,8 +3,8 @@
 Usage:
     python scripts/build_shots.py [--design shots/shot_design.py] [--beats analysis/beats.json]
 
-Times come from the bar grid in beats.json; lyrics are spread evenly over the vocal bars
-of each section. Each shot records how its first frame is made (t2i / edit1 / edit2,
+Times come from the bar grid in beats.json; lyrics follow the sung timing (analysis/lyrics_timing.json from
+lyrics_align.py) when present, else are spread evenly over the vocal bars of each section. Each shot records how its first frame is made (t2i / edit1 / edit2,
 with member reference images) and how it is animated (lipsync -> audio-driven model,
 otherwise image-to-video). Checks that shots tile the song bar-by-bar with no gaps.
 """
@@ -24,9 +24,29 @@ def load_design(path):
             getattr(mod, "ECHO_CAPTIVE_UNTIL", None))
 
 
-def bar_lyrics(beats):
-    """bar index -> lyric line, spreading each section's lines over its vocal bars."""
+def load_timing(beats_path):
+    """Sung lines from lyrics_align.py (analysis/lyrics_timing.json next to beats.json), or None."""
+    p = Path(beats_path).with_name("lyrics_timing.json")
+    if not p.exists():
+        return None
+    data = json.loads(p.read_text(encoding="utf-8"))
+    return data.get("lines") or None
+
+
+def bar_lyrics(beats, timing=None):
+    """bar index -> lyric line. With sung timing: the line sung most in that bar (repeats included, nothing in
+    silent bars); without: each section's lines spread evenly over its vocal bars."""
     out = {}
+    if timing:
+        for b in beats["bars"]:
+            best, most = None, 0.25 * (b["end"] - b["start"])
+            for ln in timing:
+                ov = min(b["end"], ln["end"]) - max(b["start"], ln["start"])
+                if ov > most:
+                    best, most = ln["text"], ov
+            if best:
+                out[b["index"]] = best
+        return out
     for s in beats["sections"]:
         lines = s.get("lyrics") or []
         bars = [b for b in beats["bars"] if b.get("section_index") == s["index"]]
@@ -46,6 +66,7 @@ def main():
     ap.add_argument("--members", default="shots/members.json")
     ap.add_argument("--out", default="shots/shots.json")
     ap.add_argument("--plates", default="shots/plates")
+    ap.add_argument("--bars", help="first-last bar the design covers (default: the whole song), e.g. 24-40")
     args = ap.parse_args()
 
     design, locations, loc_by_bar, captive_until = load_design(args.design)
@@ -55,7 +76,7 @@ def main():
     beats = json.loads(Path(args.beats).read_text(encoding="utf-8"))
     members = json.loads(Path(args.members).read_text(encoding="utf-8"))["members"]
     bars = {b["index"]: b for b in beats["bars"]}
-    lyr = bar_lyrics(beats)
+    lyr = bar_lyrics(beats, load_timing(args.beats))
 
     rows = []
     for key, val in design.items():
@@ -64,9 +85,13 @@ def main():
             rows += g
     rows.sort(key=lambda r: r[0])
 
-    # coverage check: every bar exactly once
+    # coverage check: every bar (of the chosen range) exactly once
     covered = [i for r in rows for i in range(r[0], r[1] + 1)]
-    missing = sorted(set(bars) - set(covered))
+    want = set(bars)
+    if args.bars:
+        a, b = (int(x) for x in args.bars.split("-"))
+        want = {i for i in bars if a <= i <= b}
+    missing = sorted(want - set(covered))
     dup = sorted({i for i in covered if covered.count(i) > 1})
     if missing or dup:
         raise SystemExit(f"bar coverage problem: missing {missing}, duplicated {dup}")

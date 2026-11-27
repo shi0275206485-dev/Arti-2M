@@ -4,6 +4,7 @@ A project is a self-contained copy of the pipeline layout under projects/<id>/ (
 shots/, clips/, output/, workflows/); the repo's scripts/ are run with that folder as the working directory.
 Only one job runs at a time (YuE2 and ComfyUI share the GPU, and two gen processes clobber index.json).
 """
+import contextlib
 import json
 import os
 import queue
@@ -17,7 +18,9 @@ import time
 import traceback
 from pathlib import Path
 
-from . import brain, design, studio
+import psutil
+
+from . import brain, cast, design, llm_local, studio
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
@@ -31,6 +34,33 @@ LABELS = {"concept": "Concept & lyrics", "music": "Song", "analysis": "Beat / se
           "refs": "Member reference portraits", "design": "Shot design", "frames": "First frames + QC",
           "videos": "Video clips + QC", "assemble": "Final cut"}
 MAX_QC_RETRIES = 2
+# Free RAM (GB) wanted before a ComfyUI session starts (machine has 32GB; LTX leaves ~4GB free while rendering,
+# MiniMax H3 needs ~20GB: a library entry may set "min_free_ram_gb"). Below this the job pauses (needs user)
+# instead of running into Claude Code / Windows killing processes when memory runs out.
+RAM_FRAMES_GB = 10
+RAM_VIDEOS_GB = 16
+RAM_LOW_GB = 2.5     # logged once per run when free RAM falls below this while a script runs
+# Creation options (project st["opts"]): video mode, style preset, aspect ratio, part of the song.
+VMODES = ("stage", "story", "visualizer", "lyric")   # lyric = stage visuals + karaoke captions on
+# frame (Qwen) / video (LTX) / output sizes per aspect ratio; 16:9 = the scripts' own defaults (no arguments)
+ASPECTS = {"16:9": None,
+           "9:16": {"frame": (768, 1344), "video": (704, 1280), "out": (720, 1280)},
+           "1:1": {"frame": (1024, 1024), "video": (960, 960), "out": (1080, 1080)}}
+RANGES = ("full", "chorus", "first45")
+DEFAULT_OPTS = {"vmode": "stage", "style": None, "aspect": "16:9", "range": "full"}
+STYLES_FILE = ROOT / "data" / "mv_styles.json"
+# post-production (st["post"]): captions, music-driven effects, colour grade, upscale; per-shot offset/transition
+# live in st["overrides"][sid] next to the prompt overrides
+DEFAULT_POST = {"captions": {"on": False, "style": "classic"}, "fx": {"pulse": 0.0, "punch": 0.0, "where": "all"},
+                "grade": "none", "upscale": False}
+UPSCALE = {"16:9": "1920x1080", "9:16": "1080x1920", "1:1": None}   # 1:1 is already 1080x1080
+SHOT_EDIT_KEYS = ("offset", "trans")
+
+
+def mv_styles():
+    return json.loads(STYLES_FILE.read_text(encoding="utf-8")) if STYLES_FILE.exists() else []
+
+
 CHUNK_BUDGET = 400   # seconds of estimated LTX time per ComfyUI session (it leaks RAM per clip)
 
 
@@ -88,7 +118,7 @@ class Project:
         return json.loads(p.read_text(encoding="utf-8")) if p.exists() else default
 
 
-def create_project(title, brief, mode, music_source="yue2", song_id=None):
+def create_project(title, brief, mode, music_source="yue2", song_id=None, cast_ids=None, opts=None):
     slug = re.sub(r"[^a-z0-9]+", "_", title.lower()).strip("_")[:24] or "mv"
     pid = f"{slug}_{time.strftime('%Y%m%d_%H%M%S')}"
     d = PROJECTS / pid
@@ -98,7 +128,10 @@ def create_project(title, brief, mode, music_source="yue2", song_id=None):
     st = {"id": pid, "title": title, "brief": brief, "mode": mode, "created": time.time(),
           "stages": {s: {"status": "pending", "msg": ""} for s in STAGES},
           "concept": None, "music": {"seed": 42, "runs": [], "source": music_source, "song_id": song_id}, "overrides": {}, "qc": {"frames": {}, "clips": {}},
-          "refs": {}, "error": None}
+          "refs": {}, "error": None, "cast": list(cast_ids or []), "opts": {**DEFAULT_OPTS, **(opts or {})},
+          "post": json.loads(json.dumps(DEFAULT_POST))}
+    if st["opts"]["vmode"] == "lyric":
+        st["post"]["captions"]["on"] = True
     p = Project(pid)
     p.dir.mkdir(parents=True, exist_ok=True)
     p.save(st)
@@ -125,6 +158,9 @@ class Engine:
         self.current = None          # (pid, task name)
         self.proc = None
         self.cancel_flag = False
+        # the local LLM (Unsloth Studio) and ComfyUI / YuE2 share the 16GB GPU: loading one evicts the other
+        llm_local.BEFORE_LOAD = lambda: subprocess.run([PY, SCRIPTS / "comfy_server.py", "stop"],
+                                                       capture_output=True, text=True)
         threading.Thread(target=self._loop, daemon=True).start()
 
     # -------- public
@@ -146,9 +182,11 @@ class Engine:
             self.current = (pid, task)
             self.cancel_flag = False
             if pid.startswith("song:"):
+                llm_local.LOG = studio.Song(pid[5:]).log
                 self._song_job(pid[5:], task, kw)
                 continue
             p = Project(pid)
+            llm_local.LOG = p.log   # local-LLM load/unload messages go to this job's log
             try:
                 if task in STAGES:
                     self._run_stage(p, task)
@@ -249,10 +287,53 @@ class Engine:
         return rc
 
     def comfy(self, p, action):
+        llm_local.release(p.log)   # "start" (ComfyUI) and "stop" (before YuE2) both need the GPU free
         args = [SCRIPTS / "comfy_server.py", action] + (["--cache-none"] if action == "start" else [])
         self.sh(p, args, check=(action == "start"))
 
+    @staticmethod
+    def free_ram_gb():
+        return psutil.virtual_memory().available / 2 ** 30
+
+    def need_ram(self, p, need, what):
+        """Make sure about `need` GB of RAM is free before a heavy step: unload the local LLM and stop ComfyUI
+        (it keeps models in RAM) if needed; if it is still short, pause the job for the user."""
+        free = self.free_ram_gb()
+        if free >= need:
+            return
+        p.log(f"memory: {free:.1f} GB free before {what} (want {need} GB); unloading the local LLM and ComfyUI")
+        llm_local.release(p.log)
+        r = subprocess.run([PY, SCRIPTS / "comfy_server.py", "status"], capture_output=True, text=True)
+        if r.stdout.startswith("running"):
+            self.comfy(p, "stop")
+        time.sleep(3)
+        free = self.free_ram_gb()
+        p.log(f"memory: {free:.1f} GB free now")
+        if free < need:
+            raise NeedsUser(f"only {free:.1f} GB RAM free, {what} needs about {need} GB: close large programs "
+                            "(browser tabs, games, other AI tools) and continue")
+
+    @contextlib.contextmanager
+    def ram_watch(self, p, what):
+        """Log (once) when free RAM gets critically low while a script runs, so a killed process can be explained."""
+        stop = threading.Event()
+
+        def watch():
+            low = None
+            while not stop.wait(10):
+                f = self.free_ram_gb()
+                if f < RAM_LOW_GB and (low is None or f < low - 1):
+                    p.log(f"memory WARNING: only {f:.1f} GB RAM free during {what}")
+                    low = f
+        t = threading.Thread(target=watch, daemon=True)
+        t.start()
+        try:
+            yield
+        finally:
+            stop.set()
+
     def ensure_comfy(self, p):
+        llm_local.release(p.log)
         r = subprocess.run([PY, SCRIPTS / "comfy_server.py", "status"], capture_output=True, text=True)
         if not r.stdout.startswith("running"):   # "not running" also contains "running"
             self.comfy(p, "start")
@@ -279,16 +360,27 @@ class Engine:
         st = p.load()
         if not st["concept"]:
             song = self.library_song(p)
-            p.log("asking Claude for a concept" + (f" for the song '{song['title']}'..." if song else "..."))
-            c = brain.concept(st["brief"], song)
+            p.log(f"asking {brain.who('concept')} for a concept" + (f" for the song '{song['title']}'..." if song else "..."))
+            members = [cast.member(cid) for cid in st.get("cast") or []]
+            if members:
+                p.log(f"cast library: {', '.join(m['name'] for m in members)} star in this MV")
+            o = self.opts(p)
+            style = next((x for x in mv_styles() if x["id"] == o["style"]), None)
+            if o["vmode"] != "stage" or style:
+                p.log(f"options: {o['vmode']} mode" + (f", style {style['name_en']}" if style else "")
+                      + f", {o['aspect']}, range {o['range']}")
+            c = brain.concept(st["brief"], song, members, self.scene_mode(p), style)
             p.update(lambda s: s.__setitem__("concept", c))
+            for m in members:
+                cast.mark_used(m["cast_id"], p.id)
         self.write_concept_files(p)
 
     def write_concept_files(self, p):
         c = p.load()["concept"]
         (p.dir / "lyrics.txt").write_text(c["lyrics"], encoding="utf-8")
         members = {m["name"]: {"look": m["look"], "signature_color": m["signature_color"], "noun": m["noun"],
-                               "video_desc": m["video_desc"], "reference_image": f"shots/refs/{m['name']}.png"}
+                               "video_desc": m["video_desc"], "reference_image": f"shots/refs/{m['name']}.png",
+                               **({"cast_id": m["cast_id"]} if m.get("cast_id") else {})}
                    for m in c["members"]}
         (p.dir / "shots/members.json").write_text(json.dumps(
             {"song": c["title"], "members": members}, indent=1, ensure_ascii=False), encoding="utf-8")
@@ -405,28 +497,68 @@ class Engine:
         self._new_song(p, {"source": "upload", "file": path})
 
     def stage_analysis(self, p):
+        llm_local.release(p.log)   # Demucs (--stems, singer_id) needs the GPU too
         self.sh(p, [SCRIPTS / "analyze_audio.py", "audio/song.wav", "--stems"])
+        b = p.jload("analysis/beats.json")
+        self.align_lyrics(p, b)
         b = p.jload("analysis/beats.json")
         p.log(f"analysis: {len(b['bars'])} bars, {len(b['sections'])} sections, {b['tempo_bpm']:.1f} BPM, "
               f"{b['duration']:.1f}s")
         for w in b.get("warnings", []):
             p.log(f"  analysis warning: {w}")
 
-    def stage_refs(self, p):
-        self.ensure_comfy(p)
-        self.sh(p, [SCRIPTS / "gen_refs.py", "--n", "4"])
-        self.auto_pick_refs(p)
+    def align_lyrics(self, p, beats):
+        """Whisper the vocal stem and match it to the lyrics sheet (lyrics_align.py): captions and shot lyrics
+        then follow what is actually sung. If the sung lines sit a whole number of bars away from the score grid
+        (YuE2 rendered a different length than its score), store the shift and analyse again. Best effort."""
+        song = self.library_song(p)
+        stem = p.dir / "stems/htdemucs_6s/song/vocals.wav"
+        timing = p.dir / "analysis/lyrics_timing.json"
+        if (song and song.get("instrumental")) or not stem.exists() \
+                or not any(s.get("lyrics") for s in beats["sections"]):
+            timing.unlink(missing_ok=True)
+            return
+        try:
+            self.sh(p, [SCRIPTS / "lyrics_align.py", "--write-fix"])
+            if p.jload("analysis/lyrics_timing.json").get("bar_shift"):
+                self.sh(p, [SCRIPTS / "analyze_audio.py", "audio/song.wav"])
+                self.sh(p, [SCRIPTS / "lyrics_align.py"])
+        except Cancelled:
+            raise
+        except Exception as e:
+            timing.unlink(missing_ok=True)   # never leave timing from an older song behind
+            p.log(f"analysis: lyric alignment skipped ({e}); captions will spread lines evenly")
 
-    def auto_pick_refs(self, p):
+    def stage_refs(self, p):
+        info = self.members_info(p)
+        new = []
+        for name, m in info.items():
+            src = m.get("cast_id") and cast.ref_path(m["cast_id"])
+            if src and src.exists():   # cast library member: keep the confirmed face, generate nothing
+                for old in (p.dir / "shots/refs").glob(f"{name}_cand*.png"):
+                    old.unlink()
+                shutil.copyfile(src, p.dir / f"shots/refs/{name}_cand0.png")
+                self.pick_ref(p, name, 0, "from the cast library")
+            else:
+                new.append(name)
+        if new:
+            self.ensure_comfy(p)
+            for name in new:
+                self.sh(p, [SCRIPTS / "gen_refs.py", "--n", "4", "--only", name])
+            self.auto_pick_refs(p, new)
+
+    def auto_pick_refs(self, p, names=None):
         info = self.members_info(p)
         for name, m in info.items():
+            if names is not None and name not in names:
+                continue
             cands = sorted((p.dir / "shots/refs").glob(f"{name}_cand*.png"))
             best, reason = 0, "first candidate"
             try:
                 r = brain.pick_reference(m["look"], cands)
                 best, reason = max(0, min(r["best"], len(cands) - 1)), r["reason"]
             except Exception as e:
-                p.log(f"refs: Claude pick failed ({e}); using candidate 0")
+                p.log(f"refs: {brain.who('pick')} pick failed ({e}); using candidate 0")
             self.pick_ref(p, name, best, reason)
 
     def pick_ref(self, p, name, k, reason="chosen by you"):
@@ -440,39 +572,275 @@ class Engine:
         beats = p.jload("analysis/beats.json")
         info = self.members_info(p)
         lights = {l["key"]: l["description"] for l in c["lights"]}
-        text = design.bars_text(beats)
-        feedback, rows = None, None
+        rng, locs = self.bar_range(p, beats), self.locations(p)
+        if rng:
+            p.log(f"design: making bars {rng[0]}-{rng[1]} only ({beats['bars'][rng[0]]['start']:.1f}-"
+                  f"{beats['bars'][rng[1]]['end']:.1f}s)")
+        text = design.bars_text(beats, rng)
+        song = self.library_song(p)
+        ctx = self.design_context(p)
+        feedback, rows, soft_retried = None, None, False
         for attempt in range(3):
-            p.log(f"asking Claude for the shot design (attempt {attempt + 1})...")
-            raw = brain.design(text, list(info), list(lights), feedback)
-            rows, errors = design.validate(raw, beats, list(info))
+            p.log(f"asking {brain.who('design')} for the shot design (attempt {attempt + 1})...")
+            t0 = time.time()
+            raw = brain.design(text, info, lights, feedback, ctx)
+            rows, errors = design.validate(raw, beats, list(info), rng, list(locs) if len(locs) > 1 else None)
+            p.log(f"design: {len(raw)} rows in {time.time() - t0:.0f}s")
             if not errors:
-                break
+                # soft check (generic / repeated actions, stage props unused): one redesign, then accept
+                soft = design.variety(rows, list(info), c.get("stage_plate") or "")
+                if not soft or soft_retried or attempt == 2:
+                    for s in soft:
+                        p.log(f"design (accepted anyway): {s}")
+                    break
+                soft_retried = True
+                feedback = "\n".join(soft)
+                p.log(f"design too repetitive, asking again: {feedback}")
+                continue
             feedback = "\n".join(errors[:30])
             p.log(f"design problems: {feedback}")
         else:
-            raise RuntimeError("Claude could not produce a design that covers every bar exactly once")
-        song = self.library_song(p)
+            raise RuntimeError(f"{brain.who('design')} could not produce a design that covers every bar exactly once")
         if song and song.get("instrumental"):   # no vocals: never drive a mouth (audio-only "vocal" bars can be noise)
             for r in rows:
                 r["lipsync"] = None
+        for note in design.fix_cuts(rows):   # neighbouring shots must differ visibly (else they meet as a jump cut)
+            p.log(f"design: {note}")
+        design.state_chain(rows)   # where each shot has to pick its members up (used by the frame QC)
         (p.dir / "shots/design_rows.json").write_text(json.dumps(rows, indent=1, ensure_ascii=False), encoding="utf-8")
-        design.write_design(p.dir / "shots/shot_design.py", rows, c["stage_plate"], lights, info)
+        design.write_design(p.dir / "shots/shot_design.py", rows, locs, lights, info, self.scene_mode(p))
         p.update(lambda s: s.__setitem__("overrides", {}))
         self.build(p)
-        # gen_frames.py --plates skips an existing stage.png; after a new concept the old plate would be reused.
-        # Remember the prompt each plate was made from and set the old image aside (never deleted) on change.
-        plate, made_from = p.dir / "shots/plates/stage.png", p.dir / "shots/plates/stage.prompt.txt"
-        prompt_used = made_from.read_text(encoding="utf-8") if made_from.exists() else None
-        if plate.exists() and prompt_used != c["stage_plate"]:
-            plate.rename(plate.with_name(f"stage_old_{time.strftime('%Y%m%d_%H%M%S')}.png"))
-            p.log("design: stage description changed -> generating a new stage plate (old one kept)")
+        self.make_plates(p)
+
+    def make_plates(self, p):
+        """One empty-set plate per location (stage mode: shots/plates/stage.png). gen_frames.py --plates skips
+        existing plates, so a plate whose description (or aspect ratio) changed is set aside first (kept)."""
+        want = {k: f"{d} [{self.opts(p)['aspect']}]" for k, d in self.locations(p).items()}
+        for key, made in want.items():
+            plate, made_from = p.dir / f"shots/plates/{key}.png", p.dir / f"shots/plates/{key}.prompt.txt"
+            used = made_from.read_text(encoding="utf-8") if made_from.exists() else None
+            if used is not None and not used.endswith("]"):   # written before the aspect ratio was recorded
+                used += " [16:9]"
+            if plate.exists() and used != made:
+                plate.rename(plate.with_name(f"{key}_old_{time.strftime('%Y%m%d_%H%M%S')}.png"))
+                p.log(f"design: plate '{key}' changed -> generating a new one (old one kept)")
         self.ensure_comfy(p)
-        self.sh(p, [SCRIPTS / "gen_frames.py", "--plates"], env=self.style_env(p))
-        made_from.write_text(c["stage_plate"], encoding="utf-8")
+        self.sh(p, [SCRIPTS / "gen_frames.py", "--plates"] + self.size_args(p, "frame"), env=self.style_env(p))
+        for key, made in want.items():
+            (p.dir / f"shots/plates/{key}.prompt.txt").write_text(made, encoding="utf-8")
+
+    # -------- creation options
+    def opts(self, p):
+        return {**DEFAULT_OPTS, **(p.load().get("opts") or {})}
+
+    def scene_mode(self, p):
+        """What the pictures are: stage / story / visualizer (a lyric video is a stage video with captions)."""
+        v = self.opts(p)["vmode"]
+        return "stage" if v == "lyric" else v
+
+    def post(self, p):
+        cfg = json.loads(json.dumps(DEFAULT_POST))
+        for k, v in (p.load().get("post") or {}).items():
+            if isinstance(v, dict) and isinstance(cfg.get(k), dict):
+                cfg[k].update(v)
+            else:
+                cfg[k] = v
+        return cfg
+
+    def post_args(self, p, log=True):
+        """Prepare the finishing inputs (fx hits, captions, per-shot edits) and return assemble.py arguments."""
+        post, o, args = self.post(p), self.opts(p), []
+        edits = {sid: {k: v for k, v in e.items() if k in SHOT_EDIT_KEYS}
+                 for sid, e in p.load()["overrides"].items() if any(k in e for k in SHOT_EDIT_KEYS)}
+        (p.dir / "shots/edits.json").write_text(json.dumps(edits, indent=1), encoding="utf-8")
+        args += ["--edits", "shots/edits.json"]
+        fx = post["fx"]
+        if (fx.get("pulse") or 0) > 0 or (fx.get("punch") or 0) > 0:
+            self.sh(p, [SCRIPTS / "beat_fx.py", "--pulse", fx.get("pulse") or 0, "--punch", fx.get("punch") or 0,
+                        "--where", fx.get("where") or "all"])
+            args += ["--fx", "analysis/fx.json"]
+        up = UPSCALE.get(o["aspect"]) if post.get("upscale") else None
+        if up:
+            args += ["--upscale", up]
+        if post.get("grade") and post["grade"] != "none":
+            args += ["--grade", post["grade"]]
+        if post["captions"].get("on"):
+            if (p.dir / "lyrics.txt").exists() and (p.dir / "lyrics.txt").read_text(encoding="utf-8").strip():
+                w, h = (int(x) for x in up.split("x")) if up else \
+                    (ASPECTS[o["aspect"]] or {"out": (1280, 720)})["out"]
+                self.sh(p, [SCRIPTS / "captions.py", "--style", post["captions"].get("style", "classic"),
+                            "--width", w, "--height", h, "--out", "output/captions.ass"] + self.time_args(p))
+                args += ["--captions", "output/captions.ass"]
+            elif log:
+                p.log("captions: the song has no lyrics, skipped")
+        return args
+
+    def size_args(self, p, kind, scale=1.0):
+        """--width/--height for frames ("frame"), videos ("video") or the cut ("out"); 16:9 full size = defaults."""
+        a = ASPECTS.get(self.opts(p)["aspect"])
+        if a is None and scale == 1.0:
+            return []
+        w, h = (a or {"frame": (1344, 768), "video": (1280, 720), "out": (1280, 720)})[kind]
+        return ["--width", int(w * scale) // 2 * 2, "--height", int(h * scale) // 2 * 2]
+
+    def locations(self, p):
+        """{key: plate description}: story mode has the concept's locations, the others one stage."""
+        c = p.load()["concept"] or {}
+        if self.opts(p)["vmode"] == "story" and c.get("locations"):
+            return {l["key"]: l["description"] for l in c["locations"]}
+        return {"stage": c.get("stage_plate", "")}
+
+    def bar_range(self, p, beats=None):
+        """(first_bar, last_bar) of the part of the song this MV covers, or None for the whole song."""
+        r = self.opts(p)["range"]
+        beats = beats or p.jload("analysis/beats.json")
+        bars = beats["bars"]
+        if isinstance(r, dict) and "bars" in r:
+            a, b = (max(0, min(int(x), len(bars) - 1)) for x in r["bars"])
+            return (min(a, b), max(a, b))
+        if r == "chorus":
+            for sec in beats["sections"]:
+                name = sec["name"].lower().replace("-", "")
+                if "chorus" in name and "pre" not in name:
+                    idx = [b["index"] for b in bars if b["section_index"] == sec["index"]]
+                    if idx:
+                        return (idx[0], idx[-1])
+            return None
+        if r == "first45":
+            last = max((b["index"] for b in bars if b["end"] <= bars[0]["start"] + 45), default=len(bars) - 1)
+            return (0, last)
+        return None
+
+    def range_args(self, p):
+        rng = self.bar_range(p)
+        return ["--bars", f"{rng[0]}-{rng[1]}"] if rng else []
+
+    def time_args(self, p):
+        rng = self.bar_range(p)
+        if not rng:
+            return []
+        bars = p.jload("analysis/beats.json")["bars"]
+        return ["--start", f"{bars[rng[0]]['start']:.3f}", "--end", f"{bars[rng[1]]['end']:.3f}"]
+
+    def filler(self, p):
+        return f"shots/plates/{next(iter(self.locations(p)))}.png"
+
+    def design_context(self, p):
+        st, song = p.load(), self.library_song(p)
+        c = st["concept"] or {}
+        return {"title": c.get("title"), "style": c.get("style"), "brief": st.get("brief"),
+                "stage_plate": c.get("stage_plate"), "instrumental": bool(song and song.get("instrumental")),
+                "vmode": self.scene_mode(p), "locations": c.get("locations") or []}
+
+    # -------- storyboard editor (board): edit rows, keep what is still valid
+    def board_apply(self, p, rows, why):
+        """Write an edited storyboard. Shots whose content did not change keep their first frame / clip / QC /
+        prompt overrides even when their ids shift (ids are positional: s001, s002...); only changed shots have
+        to be generated again. Old indexes are copied to index_old_<time>.json."""
+        st = p.load()
+        c, info = st["concept"], self.members_info(p)
+        lights = {l["key"]: l["description"] for l in c["lights"]}
+        beats = p.jload("analysis/beats.json")
+        locs = self.locations(p)
+        rows, errors = design.validate(rows, beats, list(info), self.bar_range(p, beats),
+                                       list(locs) if len(locs) > 1 else None)
+        if errors:
+            raise RuntimeError("storyboard not valid: " + "; ".join(errors[:10]))
+        song = self.library_song(p)
+        if song and song.get("instrumental"):
+            for r in rows:
+                r["lipsync"] = None
+        design.state_chain(rows)
+        old_rows, old_shots = p.jload("shots/design_rows.json", []), self.shots(p)
+        old_sid = {tuple(s["bars"]): s["id"] for s in old_shots}
+        by_frame = {design.frame_key(r): old_sid.get((r["first_bar"], r["last_bar"])) for r in old_rows}
+        by_clip = {design.clip_key(r): old_sid.get((r["first_bar"], r["last_bar"])) for r in old_rows}
+        (p.dir / "shots/design_rows.json").write_text(json.dumps(rows, indent=1, ensure_ascii=False), encoding="utf-8")
+        design.write_design(p.dir / "shots/shot_design.py", rows, locs, lights, info, self.scene_mode(p))
+        self.sh(p, [SCRIPTS / "build_shots.py"] + self.range_args(p))
+        new_sid = {tuple(s["bars"]): s["id"] for s in self.shots(p)}
+        fidx, cidx = p.jload("shots/frames/index.json", {}), p.jload("clips/index.json", {})
+        ts = time.strftime("%Y%m%d_%H%M%S")
+        for rel, idx in (("shots/frames/index.json", fidx), ("clips/index.json", cidx)):
+            if idx:
+                (p.dir / rel).with_name(f"index_old_{ts}.json").write_text(json.dumps(idx, indent=1), encoding="utf-8")
+        nf, nc, nov, nqf, nqc = {}, {}, {}, {}, {}
+        ov, qc = st["overrides"], st["qc"]
+        for r in rows:
+            sid, of, oc = new_sid[(r["first_bar"], r["last_bar"])], by_frame.get(design.frame_key(r)), \
+                by_clip.get(design.clip_key(r))
+            if of and of in fidx:
+                nf[sid] = fidx[of]
+                if of in qc["frames"]:
+                    nqf[sid] = qc["frames"][of]
+                if ov.get(of, {}).get("frame"):
+                    nov.setdefault(sid, {})["frame"] = ov[of]["frame"]
+                if oc and oc in cidx:
+                    nc[sid] = cidx[oc]
+                    if oc in qc["clips"]:
+                        nqc[sid] = qc["clips"][oc]
+                    if ov.get(oc, {}).get("motion"):
+                        nov.setdefault(sid, {})["motion"] = ov[oc]["motion"]
+                    for k in SHOT_EDIT_KEYS:
+                        if k in ov.get(oc, {}):
+                            nov.setdefault(sid, {})[k] = ov[oc][k]
+        for rel, idx in (("shots/frames/index.json", nf), ("clips/index.json", nc)):
+            (p.dir / rel).write_text(json.dumps(idx, indent=1, ensure_ascii=False), encoding="utf-8")
+        n = len(rows)
+        miss_f, miss_c = n - len(nf), n - len(nc)
+
+        def f(s):
+            s["overrides"], s["qc"] = nov, {"frames": nqf, "clips": nqc}
+            S = s["stages"]
+            for stage, miss in (("frames", miss_f), ("videos", miss_c), ("assemble", miss_c or miss_f)):
+                if miss and S[stage]["status"] in ("done", "waiting", "error"):
+                    S[stage] = {"status": "pending", "msg": ""}
+            s.pop("board_proposal", None)
+        p.update(f)
+        self.apply_overrides(p)
+        p.log(f"storyboard {why}: {n} shots; kept {len(nf)} first frames and {len(nc)} clips; "
+              f"{miss_f} frames and {miss_c} clips to generate")
+
+    def task_apply_board(self, p, rows):
+        self.board_apply(p, rows, "edited")
+
+    def task_board_chat(self, p, message):
+        """The chat box of the storyboard editor: the model revises the board, the result is kept as a proposal the
+        user compares and applies (or discards)."""
+        rows = p.jload("shots/design_rows.json", [])
+        c, info, beats = p.load()["concept"], self.members_info(p), p.jload("analysis/beats.json")
+        lights = {l["key"]: l["description"] for l in c["lights"]}
+        p.log(f"storyboard chat: {message!r} -> asking {brain.who('design')}...")
+        t0, fb, notes, fixed, errors = time.time(), None, [], rows, []
+        for attempt in range(2):
+            req = message + (f"\n\nYour previous revision had problems, fix them:\n{fb}" if fb else "")
+            rng, locs = self.bar_range(p, beats), self.locations(p)
+            raw = brain.revise_design(rows, req, design.bars_text(beats, rng), info, lights, self.design_context(p))
+            raw, notes = design.restore_locked(raw, rows)
+            fixed, errors = design.validate(raw, beats, list(info), rng, list(locs) if len(locs) > 1 else None)
+            if not errors:
+                break
+            fb = "\n".join(errors[:20])
+            p.log(f"storyboard chat: revision not valid ({fb}), asking again")
+        changed = design.diff_rows(rows, fixed)
+        p.update(lambda s: s.__setitem__("board_proposal", {
+            "message": message, "rows": fixed, "errors": errors, "notes": notes, "changed": changed,
+            "t": time.time()}))
+        p.log(f"storyboard chat: proposal ready in {time.time() - t0:.0f}s, {len(changed)} shots changed"
+              + (f", NOT VALID: {'; '.join(errors[:3])}" if errors else ""))
+
+    def task_animatic(self, p):
+        """Quick preview before the expensive video step: first-frame stills cut to the music (640x360)."""
+        out = f"output/animatic_{time.strftime('%Y%m%d_%H%M%S')}.mp4"
+        self.sh(p, [SCRIPTS / "assemble.py", "--shots", "shots/shots.json", "--audio", "audio/song.wav",
+                    "--out", out, "--stills", "--filler", self.filler(p)] + self.size_args(p, "out", 0.5)
+                + self.time_args(p))
+        p.update(lambda s: s.__setitem__("animatic", out))
+        p.log(f"animatic: {out}")
 
     def build(self, p):
-        self.sh(p, [SCRIPTS / "build_shots.py"])
+        self.sh(p, [SCRIPTS / "build_shots.py"] + self.range_args(p))
         self.apply_overrides(p)
 
     def apply_overrides(self, p):
@@ -494,17 +862,21 @@ class Engine:
 
     # -------- frames
     def stage_frames(self, p):
+        self.need_ram(p, RAM_FRAMES_GB, "first frames")
         self.ensure_comfy(p)
         idx = p.jload("shots/frames/index.json", {})
         todo = [s["id"] for s in self.shots(p) if s["id"] not in idx]
         for i in range(0, len(todo), 8):
-            self.sh(p, [SCRIPTS / "gen_frames.py", "--only", ",".join(todo[i:i + 8])], env=self.style_env(p))
+            with self.ram_watch(p, "first frames"):
+                self.sh(p, [SCRIPTS / "gen_frames.py", "--only", ",".join(todo[i:i + 8])] + self.size_args(p, "frame"),
+                        env=self.style_env(p))
         self.qc_loop(p, "frames")
 
     def gen_frames(self, p, ids, offset):
+        self.need_ram(p, RAM_FRAMES_GB, "first frames")
         self.ensure_comfy(p)
-        self.sh(p, [SCRIPTS / "gen_frames.py", "--only", ",".join(ids), "--seed-offset", offset],
-                env=self.style_env(p))
+        self.sh(p, [SCRIPTS / "gen_frames.py", "--only", ",".join(ids), "--seed-offset", offset]
+                + self.size_args(p, "frame"), env=self.style_env(p))
 
     # -------- videos
     def stage_videos(self, p):
@@ -521,11 +893,12 @@ class Engine:
             sys.path.insert(0, str(SCRIPTS))
         import wf_bindings as wb
         sh = {s["id"]: s for s in self.shots(p)}
-        chunks = []
+        chunks, ram = [], {}
         for role in ("i2v", "lipsync"):
             bf = p.dir / wb.BINDINGS_FILE
             b = (json.loads(bf.read_text(encoding="utf-8")).get(role) if bf.exists() else None) or wb.DEFAULTS[role]
             budget = b.get("chunk_budget", CHUNK_BUDGET)
+            ram[role] = b.get("min_free_ram_gb", RAM_VIDEOS_GB)
             chunk, tot = [], 0
             for i in ids:
                 if sh[i]["video"]["mode"] != role:
@@ -540,11 +913,13 @@ class Engine:
             if chunk:
                 chunks.append(chunk)
         for n, c in enumerate(chunks, 1):
-            p.log(f"videos: chunk {n}/{len(chunks)} ({len(c)} clips)")
+            p.log(f"videos: chunk {n}/{len(chunks)} ({len(c)} clips, {self.free_ram_gb():.1f} GB RAM free)")
             self.comfy(p, "stop")
+            self.need_ram(p, ram[sh[c[0]]["video"]["mode"]], f"video chunk {n}/{len(chunks)}")
             self.comfy(p, "start")
-            self.sh(p, [SCRIPTS / "gen_videos.py", "--only", ",".join(c), "--seed-offset", offset],
-                    env=self.style_env(p))
+            with self.ram_watch(p, f"video chunk {n}/{len(chunks)}"):
+                self.sh(p, [SCRIPTS / "gen_videos.py", "--only", ",".join(c), "--seed-offset", offset]
+                        + self.size_args(p, "video"), env=self.style_env(p))
 
     # -------- QC
     def sample_clip(self, clip, seconds):
@@ -560,6 +935,8 @@ class Engine:
 
     def qc_one(self, p, kind, s):
         refs = self.ref_paths(p, s["members"])
+        rows = {r["first_bar"]: r for r in p.jload("shots/design_rows.json", [])}
+        s = dict(s, prev_state=(rows.get(s["bars"][0]) or {}).get("prev_state"))
         if kind == "frames":
             f = p.jload("shots/frames/index.json")[s["id"]]["chosen"]
             return brain.qc_frame(s, p.dir / f, refs)
@@ -567,11 +944,14 @@ class Engine:
         return brain.qc_clip(s, self.sample_clip(p.dir / c, s["seconds"]), refs)
 
     def qc_loop(self, p, kind):
-        if not brain.status()["ok"]:
-            p.log("QC skipped: no Claude API credentials")
+        if not brain.ready("qc"):
+            p.log("QC skipped: no Claude API credentials and no local model chosen for QC")
             return
         shots = {s["id"]: s for s in self.shots(p)}
-        pending = list(shots)
+        checked = p.load()["qc"][kind]   # shots kept from an earlier storyboard keep their QC result
+        pending = [sid for sid in shots if sid not in checked]
+        if len(pending) < len(shots):
+            p.log(f"QC {kind}: {len(shots) - len(pending)} shots already checked, {len(pending)} to check")
         for attempt in range(MAX_QC_RETRIES + 1):
             failed = []
             for sid in pending:
@@ -608,7 +988,8 @@ class Engine:
         self.comfy(p, "stop")
         out = f"output/mv_{time.strftime('%Y%m%d_%H%M%S')}.mp4"
         self.sh(p, [SCRIPTS / "assemble.py", "--shots", "shots/shots.json", "--audio", "audio/song.wav",
-                    "--out", out])
+                    "--out", out, "--filler", self.filler(p)] + self.size_args(p, "out") + self.time_args(p)
+                + self.post_args(p))
         p.update(lambda s: s.__setitem__("final", out))
         p.log(f"final cut: {out}")
 
@@ -666,7 +1047,7 @@ class Engine:
     def song_draft(self, s):
         st = s.load()
         s.set(status="drafting", msg="")
-        s.log("asking Claude to write the song...")
+        s.log(f"asking {brain.who('song')} to write the song...")
         r = brain.song_draft(st["brief"], "Suno" if st["engine"] == "suno" else "YuE2", st.get("instrumental"),
                              st.get("genre"), st.get("settings"))
         s.set(title=r["title"], style=r["style"], lyrics="" if r["instrumental"] else r["lyrics"],
@@ -748,7 +1129,7 @@ class Engine:
                 prompt, idea = r["prompt"], r["idea"]
                 s.log(f"cover idea: {idea}")
             except Exception as e:   # no Claude key / API trouble: a plain prompt from the song's own words
-                s.log(f"cover: Claude unavailable ({str(e)[:120]}), using a simple prompt")
+                s.log(f"cover: LLM unavailable ({str(e)[:120]}), using a simple prompt")
                 prompt = (f"evocative atmospheric scene capturing the mood of this music: {st['style'] or 'a song'}; "
                           "one clear subject, cinematic lighting, bold colours")
         seed = (old.get("seed", 7) + 1) if (new_seed or old) else 7

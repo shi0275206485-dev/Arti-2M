@@ -435,7 +435,7 @@ function renderSong() {
 // title/style/lyrics first; otherwise it is a blank song to write on that page (the category pre-fills the style).
 $("#screate").onclick = async () => {
   const brief = $("#sbrief").value.trim(), genre = $("#sgenre").value, b = $("#screate");
-  const draft = !!(brief || genre) && claudeOk;
+  const draft = !!(brief || genre) && (llmReady.song ?? claudeOk);
   b.disabled = true;
   try {
     const r = await api("/api/songs", { brief, genre, draft, title: draft ? "" : t("新歌"), engine: $("#sengine").value, instrumental: $("#sinst").checked });

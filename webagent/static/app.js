@@ -12,15 +12,16 @@ const STATUS = { pending: "未开始", running: "进行中", waiting: "等待确
 
 let cur = null, data = null, view = null, lastPanelKey = "";
 
-let claudeOk = false;
+let claudeOk = false, llmReady = {};
 async function refreshStatus() {
   try {
     const s = await api("/api/status");
-    claudeOk = s.claude.ok;
+    claudeOk = s.claude.ok; llmReady = s.llm?.ready || {};
     const c = $("#claude");
     c.textContent = s.claude.ok ? t("Claude 已连接") : t("Claude 未配置");
     c.className = "pill " + (s.claude.ok ? "ok" : "bad");
-    $("#keywarn").classList.toggle("hidden", s.claude.ok);
+    $("#keywarn").classList.toggle("hidden", s.claude.ok || Object.values(llmReady).every(Boolean));
+    if (!s.claude.ok && Object.values(llmReady).some(Boolean)) { c.textContent = t("本地模型"); c.className = "pill ok"; }
     $("#claudestat").textContent = s.claude.ok ? t("已连接。可以在下面换一个 Key。") : t("还没有 Key：Claude 写歌、写分镜和质检都需要它。");
     $("#worker").textContent = s.current ? t("运行中：{0}", s.current[1]) + (s.queue.length ? t("（队列 {0}）", s.queue.length) : "") : t("空闲");
   } catch (e) { /* server restarting */ }
@@ -49,6 +50,48 @@ async function refreshList() {
   });
 }
 
+// ---------- cast library: members (name, look, confirmed portrait) reused across MVs
+let castList = [];
+const castPicked = new Set();
+const castImg = (c) => `/castfiles/${encodeURIComponent(c.id)}/ref.png?t=${c.t}`;
+
+async function refreshCast() {
+  castList = await api("/api/cast");
+  for (const id of [...castPicked]) if (!castList.some((c) => c.id === id)) castPicked.delete(id);
+  $("#castlist").innerHTML = castList.map((c) => `<div class="ccard">
+      <div class="cover" style="background-image:url('${castImg(c)}')">
+        <button class="del" data-castdel="${esc(c.id)}" data-title="${esc(c.name)}" title="${esc(t("删除"))}" aria-label="Delete">🗑</button></div>
+      <div class="st">${esc(c.name)}</div>
+      <div class="look">${esc(c.look)}</div>
+      <div class="sub muted small">${c.from?.title ? esc(t("来自：{0}", c.from.title)) : ""}${c.used_in?.length ? " · " + esc(t("用于 {0} 个 MV", c.used_in.length)) : ""}</div></div>`).join("")
+    || `<p class="muted">${t("角色库是空的：在 MV 的「成员参考图」步骤点「存入角色库」。")}</p>`;
+  $("#castlist").querySelectorAll("[data-castdel]").forEach((b) => b.onclick = async () => {
+    if (!confirm(t("从角色库删除「{0}」？\n文件夹会移到 trash/cast/。已经用它做的 MV 不受影响。", b.dataset.title))) return;
+    try { await api(`/api/cast/${encodeURIComponent(b.dataset.castdel)}/delete`, {}); }
+    catch (e) { let m = e.message; try { m = JSON.parse(m).detail || m; } catch (_) { /* text */ } alert(t("没有删除：{0}", m)); }
+    refreshCast();
+  });
+  renderCastPick();
+}
+
+function renderCastPick() {
+  const box = $("#ncast"); if (!box) return;
+  box.innerHTML = castList.map((c) => `<button type="button" class="pick ${castPicked.has(c.id) ? "on" : ""}" data-pick="${esc(c.id)}" title="${esc(c.look)}">
+    <img src="${castImg(c)}" alt=""><span>${esc(c.name)}</span></button>`).join("");
+  $("#ncasthint").textContent = castList.length ? t("不选 = 由 Claude 设计新成员；最多选 2 个") : t("角色库是空的：在 MV 的「成员参考图」步骤点「存入角色库」。");
+  box.querySelectorAll("[data-pick]").forEach((b) => b.onclick = () => {
+    const id = b.dataset.pick;
+    if (castPicked.has(id)) castPicked.delete(id);
+    else {
+      if (castPicked.size >= 2) return alert(t("最多选 2 个角色"));
+      const name = castList.find((c) => c.id === id)?.name;
+      if (castList.some((c) => castPicked.has(c.id) && c.name === name)) return alert(t("这两个角色同名"));
+      castPicked.add(id);
+    }
+    renderCastPick();
+  });
+}
+
 function select(id) {   // the router (nav.js) shows the project page
   const h = "#mv/" + encodeURIComponent(id);
   if (location.hash === h) { lastPanelKey = ""; refresh().catch(() => {}); } else location.hash = h;
@@ -74,8 +117,10 @@ async function refresh() {
   const log = $("#log"); const atBottom = log.scrollTop + log.clientHeight >= log.scrollHeight - 20;
   log.textContent = data.log.join("\n"); if (atBottom) log.scrollTop = log.scrollHeight;
   // only re-render the panel when something relevant changed (keeps edits in text areas)
-  const key = JSON.stringify([LANG, v, st.stages, st.music, st.qc, st.refs, st.final, data.shots.map((s) => [s.frame_file, s.clip_file])]);
-  if (key !== lastPanelKey && !document.activeElement?.closest?.("#panel")) { lastPanelKey = key; renderPanel(v); }
+  const key = JSON.stringify([LANG, v, st.stages, st.music, st.qc, st.refs, st.final, st.animatic, st.board_proposal?.t,
+    data.shots.map((s) => [s.id, s.bars, s.frame_file, s.clip_file])]);
+  const typing = document.activeElement?.matches?.("input,textarea,select") && document.activeElement.closest("#panel");
+  if (key !== lastPanelKey && !typing) { lastPanelKey = key; renderPanel(v); }
 }
 
 function actionsBar(stage, extra = "", noApprove = false) {
@@ -112,6 +157,8 @@ function renderPanel(stage) {
         <div>${t("画面风格")}</div><textarea id="c_fstyle" rows="2">${esc(c.frame_style)}</textarea></div>
         <div class="label">${t("成员")}</div>` + c.members.map((m, i) => `<div class="kv"><div>${esc(m.name)}</div>
         <textarea data-m="${i}" rows="3">${esc(m.look)}</textarea></div>`).join("") +
+        (c.locations?.length ? `<div class="label">${t("场景（故事模式）")}</div>` + c.locations.map((l, i) => `<div class="kv"><div>${esc(l.key)}</div>
+        <textarea data-loc="${i}" rows="2">${esc(l.description)}</textarea></div>`).join("") : "") +
         `<div class="label">${t("灯光状态")}</div><div class="muted">${c.lights.map((l) => `<b>${esc(l.key)}</b>: ${esc(l.description)}`).join("<br>")}</div>
         <div class="label">${t("歌词")}</div><textarea id="c_lyrics" rows="18">${esc(c.lyrics)}</textarea>` +
         actionsBar(stage, `<button id="savec">${t("保存修改")}</button><button data-act="regen_concept" data-confirm="${esc(t("重新让 Claude 写概念？当前修改会丢失。"))}">${t("重新生成概念")}</button>`);
@@ -121,16 +168,21 @@ function renderPanel(stage) {
   } else if (stage === "analysis") {
     h += `<p class="muted">${t("按乐谱/节拍切小节、段落和人声小节，并用 Demucs 分离人声（供对口型）。")}</p>` + actionsBar(stage);
   } else if (stage === "refs") {
-    h += Object.entries(data.refs).map(([name, r]) => `<div class="label">${esc(name)} ${r.chosen ? esc(t("· 已选 {0}（{1}）", r.chosen.cand, r.chosen.reason)) : ""}</div>
+    h += Object.entries(data.refs).map(([name, r]) => `<div class="label refhead">${esc(name)} ${r.chosen ? esc(t("· 已选 {0}（{1}）", r.chosen.cand, t(r.chosen.reason === "from the cast library" ? "来自角色库" : r.chosen.reason))) : ""}
+      ${r.chosen ? `<button data-castsave="${esc(name)}">${t(r.cast_id ? "更新角色库" : "存入角色库")}</button>` : ""}</div>
       <div class="refs">${r.cands.map((f, k) => `<div class="card ${r.chosen && r.chosen.cand === k ? "chosen" : ""}" data-ref="${esc(name)}" data-k="${k}">
       <img src="${F("shots/refs/" + f)}?v=${Date.now() % 100000}"><div class="meta">${t("候选 {0}", k)}</div></div>`).join("")}</div>`).join("");
     h += actionsBar(stage, `<button data-act="regen_refs">${t("重新生成候选")}</button>`);
   } else if (stage === "design") {
-    if (data.plate) h += `<img src="${F("shots/plates/stage.png")}" style="max-width:520px;border-radius:8px"><br>`;
-    h += `<div class="tablewrap"><table><tr>${["镜头", "小节", "时长", "景别", "成员", "口型", "歌词", "首帧", "运动"].map((x) => `<th>${t(x)}</th>`).join("")}</tr>` +
+    h += `<div id="board"><p class="muted">${t("读取分镜…")}</p></div>`;
+    if (data.plates?.length) h += `<details><summary>${t(data.plates.length > 1 ? "场景底图" : "舞台底图")}</summary><div class="platerow">${data.plates.map((f) =>
+      `<figure><img src="${F(f)}?v=${st.stages.design.t || 0}"><figcaption>${esc(f.split("/").pop().replace(".png", ""))}</figcaption></figure>`).join("")}</div></details>`;
+    const states = data.shots.some((s) => s.end_state);   // designs made before the state chain have none
+    h += `<details><summary>${t("完整提示词表")}</summary><div class="tablewrap"><table><tr>${["镜头", "小节", "时长", "景别", "成员", "口型", "歌词", ...(states ? ["接上一镜"] : []), "首帧", "运动", ...(states ? ["结束状态"] : [])].map((x) => `<th>${t(x)}</th>`).join("")}</tr>` +
       data.shots.map((s) => `<tr><td>${s.id}</td><td>${s.bars.join("–")}</td><td>${s.seconds.toFixed(1)}</td><td>${esc(s.shot)}</td>
         <td>${esc(s.members.join(", "))}</td><td>${esc(s.lipsync || "")}</td><td>${esc(s.lyrics.join(" / "))}</td>
-        <td>${esc(s.frame.prompt)}</td><td>${esc(s.video.prompt)}</td></tr>`).join("") + `</table></div>`;
+        ${states ? `<td class="state">${esc(s.prev_state || "")}</td>` : ""}
+        <td>${esc(s.frame.prompt)}</td><td>${esc(s.video.prompt)}</td>${states ? `<td class="state">${esc(s.end_state || "")}</td>` : ""}</tr>`).join("") + `</table></div></details>`;
     h += actionsBar(stage, `<button data-act="regen_design" data-confirm="${esc(t("重新设计全部分镜？"))}">${t("重新设计分镜")}</button>`);
   } else if (stage === "frames" || stage === "videos") {
     const vid = stage === "videos";
@@ -146,26 +198,72 @@ function renderPanel(stage) {
       }).join("") + `</div>`;
     h += actionsBar(stage);
   } else if (stage === "assemble") {
-    h += st.final ? `<video controls src="${F(st.final)}" style="width:100%;border-radius:8px"></video><p><a href="${F(st.final)}" download>${esc(t("下载 {0}", st.final))}</a></p>`
+    const portrait = data.opts?.aspect === "9:16";
+    h += st.final ? `<video controls src="${F(st.final)}" style="${portrait ? "height:70vh" : "width:100%"};border-radius:8px;display:block"></video><p><a href="${F(st.final)}" download>${esc(t("下载 {0}", st.final))}</a></p>`
       : `<p class="muted">${t("按小节时间轴把所有片段拼接成片。")}</p>`;
-    h += actionsBar(stage, st.final ? `<button data-act="assemble">${t("重新拼接")}</button>` : "");
+    h += postPanel(data.post);
+    h += actionsBar(stage, `<button id="postgo" class="${st.final ? "" : "hidden"}">${t("保存后期设置并重新拼接")}</button>`);
   }
   P.innerHTML = h;
   bindCommon();
   if (stage === "music") bindMusic(st);
+  if (stage === "design") initBoard();
+  if (stage === "assemble") bindPost();
   const save = $("#savec");
   if (save) save.onclick = async () => {
     const nc = structuredClone(c);
     nc.title = $("#c_title").value; nc.style = $("#c_style").value; nc.stage_plate = $("#c_plate").value;
     nc.frame_style = $("#c_fstyle").value; nc.lyrics = $("#c_lyrics").value;
     P.querySelectorAll("[data-m]").forEach((x) => nc.members[+x.dataset.m].look = x.value);
+    P.querySelectorAll("[data-loc]").forEach((x) => nc.locations[+x.dataset.loc].description = x.value);
+    if (nc.locations?.length) nc.stage_plate = nc.locations[0].description;
     await api(`/api/projects/${cur}/concept`, { concept: nc }); save.textContent = t("已保存"); lastPanelKey = "";
   };
+  P.querySelectorAll("[data-castsave]").forEach((b) => b.onclick = async () => {
+    try { await api("/api/cast/save", { pid: cur, name: b.dataset.castsave }); }
+    catch (e) { let m = e.message; try { m = JSON.parse(m).detail || m; } catch (_) { /* text */ } return alert(m); }
+    b.textContent = t("已保存到角色库"); b.disabled = true;
+    setTimeout(() => { lastPanelKey = ""; refresh(); }, 1200);
+  });
   P.querySelectorAll("[data-ref]").forEach((el) => el.onclick = async () => {
     await api(`/api/projects/${cur}/pick_ref`, { name: el.dataset.ref, k: +el.dataset.k }); lastPanelKey = ""; refresh();
   });
   P.querySelectorAll("video").forEach((v) => { v.onmouseenter = () => v.play(); v.onmouseleave = () => v.pause(); });
   P.querySelectorAll("[data-shot]").forEach((el) => el.onclick = () => openShot(el.dataset.shot, stage === "videos"));
+}
+
+// ---------- post-production (final cut): captions, music-driven effects, colour grade, upscale
+const GRADE_OPTS = [["none", "原色"], ["warm", "暖调"], ["cool", "冷调"], ["tealorange", "青橙电影"], ["vintage", "复古"], ["bw", "黑白"], ["contrast", "高对比"]];
+
+function postPanel(post) {
+  if (!post) return "";
+  const c = post.captions, fx = post.fx;
+  const sel = (id, list, v) => `<select id="${id}">${list.map(([k, l]) => `<option value="${k}" ${k === v ? "selected" : ""}>${t(l)}</option>`).join("")}</select>`;
+  return `<div class="label">${t("后期")}</div><div class="kv postkv">
+    <div>${t("歌词字幕")}</div><div class="row"><label class="chk"><input type="checkbox" id="pcap" ${c.on ? "checked" : ""}>${t("卡拉 OK 字幕")}</label>
+      ${sel("pcapst", [["classic", "经典（底部）"], ["bold", "大字（下三分之一）"], ["minimal", "简洁（左下，无高亮）"]], c.style)}</div>
+    <div>${t("鼓点闪光")}</div><div class="row"><input type="range" id="ppulse" min="0" max="1" step="0.1" value="${fx.pulse}"><span class="muted" id="ppulsev">${fx.pulse}</span></div>
+    <div>${t("鼓点推镜")}</div><div class="row"><input type="range" id="ppunch" min="0" max="1" step="0.1" value="${fx.punch}"><span class="muted" id="ppunchv">${fx.punch}</span></div>
+    <div>${t("效果范围")}</div>${sel("pwhere", [["all", "整首"], ["chorus", "只在副歌"], ["high", "只在高能量段落"]], fx.where)}
+    <div>${t("调色")}</div>${sel("pgrade", GRADE_OPTS, post.grade)}
+    <div>${t("导出")}</div><label class="chk"><input type="checkbox" id="pup" ${post.upscale ? "checked" : ""}>${t("放大到 1080p（普通插值，不是 AI 超分）")}</label>
+  </div><p class="muted">${t("鼓点效果用 Demucs 分出的鼓轨找底鼓；字幕按小节显示歌词，逐字高亮是均匀分配的。")}</p>`;
+}
+
+function bindPost() {
+  ["ppulse", "ppunch"].forEach((id) => { const el = $("#" + id); if (el) el.oninput = () => { $(`#${id}v`).textContent = el.value; }; });
+  const go = $("#postgo");
+  if (!go) return;
+  const save = async () => {
+    const post = { captions: { on: $("#pcap").checked, style: $("#pcapst").value },
+      fx: { pulse: +$("#ppulse").value, punch: +$("#ppunch").value, where: $("#pwhere").value },
+      grade: $("#pgrade").value, upscale: $("#pup").checked };
+    await api(`/api/projects/${cur}/post`, { post });
+  };
+  go.onclick = async () => { await save(); await api(`/api/projects/${cur}/action`, { task: "assemble" }); lastPanelKey = ""; refresh(); };
+  // before the first cut the settings are saved when the stage runs
+  const run = $("#panel").querySelector('[data-run="assemble"]');
+  if (run) { const orig = run.onclick; run.onclick = async () => { await save(); orig(); }; }
 }
 
 // ---------- music stage: local YuE2 / Suno / uploaded file
@@ -297,7 +395,17 @@ function openShot(sid, vid, keepText) {
   const q = vid ? s.qc_clip : s.qc_frame;
   const media = vid ? (s.clip_file ? `<video controls autoplay loop src="${F(s.clip_file)}"></video>` : "")
     : (s.frame_file ? `<img src="${F(s.frame_file)}">` : "");
-  $("#mbox").innerHTML = `<h2>${esc(t("{0} · 小节 {1} · {2}s", sid, s.bars.join("–"), s.seconds.toFixed(2)))}</h2>${media}
+  const vers = vid ? s.clip_versions : s.frame_versions, chosen = vid ? s.clip_file : s.frame_file;
+  const strip = vers.length > 1 ? `<div class="label">${t("版本（点选使用哪一版，其余都保留）")}</div><div class="verstrip">` + vers.map((f, k) =>
+    `<div class="ver ${f === chosen ? "on" : ""}" data-ver="${esc(f)}">${vid ? `<video src="${F(f)}" muted preload="metadata"></video>` : `<img src="${F(f)}">`}<span>v${k + 1}</span></div>`).join("") + `</div>` : "";
+  const ed = s.edit || {};
+  const cutEdit = vid ? `<div class="label">${t("剪辑")}</div><div class="row">
+      ${s.video.mode === "lipsync" ? `<span class="muted">${t("对口型镜头从头开始（保持口型同步）")}</span>` :
+        `${t("从第")} <input id="moffset" type="number" min="0" max="1" step="0.05" value="${ed.offset || 0}" style="width:70px"> ${t("秒开始用")}`}
+      <span class="muted">${t("进入方式")}</span><select id="mtrans">${[["cut", "直接切"], ["flash", "白闪"], ["dip", "黑场"], ["fade", "淡入"]].map(([k, l]) =>
+        `<option value="${k}" ${(ed.trans || "cut") === k ? "selected" : ""}>${t(l)}</option>`).join("")}</select>
+      <button id="medit">${t("保存剪辑")}</button></div>` : "";
+  $("#mbox").innerHTML = `<h2>${esc(t("{0} · 小节 {1} · {2}s", sid, s.bars.join("–"), s.seconds.toFixed(2)))}</h2>${media}${strip}${cutEdit}
     ${q && !q.ok ? `<div class="issues">${esc(t("质检：{0}", q.issues.join(LANG === "en" ? "; " : "；")))}</div>` : ""}
     <div class="label">${vid ? t("运动提示词") : t("首帧提示词")}</div>
     <textarea id="mprompt" rows="6">${esc(keepText ?? (vid ? s.video.prompt : s.frame.prompt))}</textarea>
@@ -305,6 +413,17 @@ function openShot(sid, vid, keepText) {
     <p class="muted">${t("重做首帧后，记得在“视频”步骤里重做这个镜头的视频。")}</p>`;
   $("#modal").classList.remove("hidden");
   $("#mclose").onclick = closeModal;
+  $("#mbox").querySelectorAll("[data-ver]").forEach((el) => el.onclick = async () => {
+    await api(`/api/projects/${cur}/choose`, { kind: vid ? "clips" : "frames", sid, file: el.dataset.ver });
+    await refresh(); openShot(sid, vid);
+  });
+  $("#mbox").querySelectorAll(".ver video").forEach((v) => { v.onmouseenter = () => v.play(); v.onmouseleave = () => v.pause(); });
+  const me = $("#medit");
+  if (me) me.onclick = async () => {
+    const o = $("#moffset");
+    await api(`/api/projects/${cur}/shot_edit`, { sid, trans: $("#mtrans").value, ...(o ? { offset: +o.value } : {}) });
+    me.textContent = t("已保存（重新拼接后生效）"); await refresh();
+  };
   $("#mregen").onclick = async () => {
     const txt = $("#mprompt").value;
     await api(`/api/projects/${cur}/action`, vid ? { task: "regen_clip", sid, motion: txt } : { task: "regen_frame", sid, prompt: txt });
@@ -400,11 +519,40 @@ function onLangChange() {
   refreshStatus(); refreshList().catch(() => {});
   lastPanelKey = ""; if (cur && data) refresh().catch(() => {});
   songKey = ""; route(); refreshSongs().catch(() => {});
+  renderNewOpts();
   if (typeof loadGenres === "function") loadGenres().catch(() => {});   // category dropdown names + groups + hint
   if (modalKind === "shot") openShot(modalShot[0], modalShot[1], $("#mprompt")?.value);
   else if (modalKind === "workflows" && !$("#wfmap")?.innerHTML) openWorkflows().catch(() => {});
   // an open mapping form is left as is (re-rendering would drop the user's dropdown choices)
 }
+
+// ---------- new MV: creation options (video mode, style preset, aspect ratio, part of the song)
+const VMODE_OPTS = [
+  { id: "stage", name: "舞台表演", desc: "成员在一个舞台上演唱，靠灯光推进" },
+  { id: "story", name: "故事", desc: "2–4 个场景，跟着歌曲讲一个简单的故事" },
+  { id: "visualizer", name: "视觉化", desc: "没有人物，抽象画面跟随音乐" },
+  { id: "lyric", name: "歌词视频", desc: "舞台画面 + 卡拉 OK 歌词字幕" },
+];
+const ASPECT_OPTS = [["16:9", "横屏 16:9"], ["9:16", "竖屏 9:16"], ["1:1", "方形 1:1"]];
+const RANGE_OPTS = [["full", "整首歌"], ["chorus", "只做第一段副歌"], ["first45", "前 45 秒"]];
+let newOpts = { vmode: "stage", style: null, aspect: "16:9" };
+let mvStyles = [];
+
+async function renderNewOpts() {
+  if (!$("#nvmode")) return;
+  if (!mvStyles.length) { try { mvStyles = await api("/api/mv_styles"); } catch (e) { mvStyles = []; } }
+  $("#nvmode").innerHTML = VMODE_OPTS.map((v) => `<button class="optcard ${newOpts.vmode === v.id ? "on" : ""}" data-nv="${v.id}"><b>${t(v.name)}</b><span>${t(v.desc)}</span></button>`).join("");
+  $("#nstyle").innerHTML = `<button class="optcard ${!newOpts.style ? "on" : ""}" data-ns=""><b>${t("自动")}</b><span>${t("按歌曲和想法")}</span></button>` +
+    mvStyles.map((s) => `<button class="optcard ${newOpts.style === s.id ? "on" : ""}" data-ns="${esc(s.id)}"><i style="background:linear-gradient(135deg,${s.swatch[0]},${s.swatch[1]})"></i><b>${esc(LANG === "en" ? s.name_en : s.name)}</b></button>`).join("");
+  $("#naspect").innerHTML = ASPECT_OPTS.map(([k, l]) => `<label class="row"><input type="radio" name="naspect" value="${k}" ${newOpts.aspect === k ? "checked" : ""}> ${t(l)}</label>`).join("");
+  const rv = $("#nrange").value || "full";
+  $("#nrange").innerHTML = RANGE_OPTS.map(([k, l]) => `<option value="${k}" ${k === rv ? "selected" : ""}>${t(l)}</option>`).join("");
+  document.querySelectorAll("[data-nv]").forEach((b) => b.onclick = () => { newOpts.vmode = b.dataset.nv; renderNewOpts(); });
+  document.querySelectorAll("[data-ns]").forEach((b) => b.onclick = () => { newOpts.style = b.dataset.ns || null; renderNewOpts(); });
+  document.querySelectorAll("input[name=naspect]").forEach((r) => r.onchange = () => { newOpts.aspect = r.value; });
+  $("#ncast").closest("div").parentElement.style.opacity = newOpts.vmode === "visualizer" ? ".4" : "";
+}
+renderNewOpts();
 
 document.querySelectorAll("#langbar button").forEach((b) => b.onclick = () => setLang(b.dataset.lang));
 $("#wfbtn").onclick = () => openWorkflows().catch((e) => alert(e.message));
@@ -413,8 +561,12 @@ $("#create").onclick = async () => {
   const title = $("#ntitle").value.trim(), brief = $("#nbrief").value.trim(), song_id = $("#nsong").value;
   if (!title || (!brief && !song_id)) return alert(t(song_id ? "请填写名称" : "请填写名称和描述"));
   const mode = document.querySelector("input[name=nmode]:checked").value;
-  const r = await api("/api/projects", song_id ? { title, brief, mode, song_id } : { title, brief, mode, music_source: "yue2" });
-  $("#ntitle").value = ""; $("#nbrief").value = "";
+  const cast_ids = newOpts.vmode === "visualizer" ? [] : [...castPicked];
+  const o = { vmode: newOpts.vmode, style: newOpts.style, aspect: newOpts.aspect, range: $("#nrange").value };
+  let r;
+  try { r = await api("/api/projects", song_id ? { title, brief, mode, song_id, cast_ids, ...o } : { title, brief, mode, music_source: "yue2", cast_ids, ...o }); }
+  catch (e) { let m = e.message; try { m = JSON.parse(m).detail || m; } catch (_) { /* text */ } return alert(m); }
+  $("#ntitle").value = ""; $("#nbrief").value = ""; castPicked.clear(); renderCastPick();
   await refreshList(); select(r.id);
 };
 $("#setkey").onclick = async () => { await api("/api/key", { key: $("#key").value }); $("#key").value = ""; refreshStatus(); };

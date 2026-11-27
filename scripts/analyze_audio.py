@@ -132,12 +132,39 @@ def align_score(score, feat, warnings):
     return float(t0), float(p), diag
 
 
+def load_align_fix(args):
+    """analysis/align_fix.json {"score_sha256", "bar_shift"}: the audio doesn't follow the score's length
+    (e.g. YuE2 rendered the intro 8 bars shorter than it wrote), found from the sung lyrics by
+    lyrics_align.py. Every score bar moves by bar_shift bars (negative = earlier)."""
+    path = Path(args.score).with_name("align_fix.json")
+    if not path.exists():
+        return 0
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if data.get("score_sha256") != hashlib.sha256(Path(args.score).read_bytes()).hexdigest():
+        return 0
+    return int(data.get("bar_shift") or 0)
+
+
 def analyze_with_score(args, score, warnings):
     feat = audio_features(args.audio, start_bpm=score["tempo_bpm"])
     dur = feat["duration"]
     t0, p, diag = align_score(score, feat, warnings)
     bpb = score["beats_per_bar"]
     bar_len = bpb * p
+    shift = load_align_fix(args)
+    if shift:
+        t0 += shift * bar_len
+        diag["bar_shift"] = shift
+        diag["t0"] = round(t0, 4)
+        if "end_check_s" in diag:
+            diag["end_check_s"] = round(diag["end_check_s"] - shift * bar_len, 3)
+        warnings[:] = [w for w in warnings if not w.startswith("last note predicted")]
+        warnings.append(f"score moved {shift:+d} bars to match the sung lyrics (analysis/align_fix.json)")
+    elif "end_check_s" in diag and abs(diag["end_check_s"]) > 1.5 * bar_len:
+        n = diag["end_check_s"] / bar_len
+        if abs(n - round(n)) < 0.15:
+            warnings.append(f"audio is {round(n):+d} whole bars off the score's length: YuE2 probably "
+                            f"skipped or added bars; lyrics_align.py can find where")
 
     beats, downbeats, bars = [], [], []
     n_beats_total = int(round(score["n_bars"] * bpb))

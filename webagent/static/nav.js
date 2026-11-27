@@ -1,7 +1,7 @@
 // Page router + bottom player. Routes are URL hashes so the browser's back button works:
-//   #create (music maker)  #library (music lib)  #song/<id>  #mv (MV maker)  #mvlib (MV lib)  #mv/<projectId>  #settings
+//   #create (music maker)  #library (music lib)  #song/<id>  #mv (MV maker)  #mvlib (MV lib)  #mv/<projectId>  #cast  #settings
 // `tab` (used by app.js / studio.js polling) is "music" on a song page, "mv" on a project page, else the page name.
-const PAGES = ["create", "library", "song", "mv", "mvlib", "project", "settings"];
+const PAGES = ["create", "library", "song", "mv", "mvlib", "project", "cast", "settings"];
 const NAV_OF = { song: "library", project: "mvlib" };
 let page = "create";
 
@@ -20,6 +20,8 @@ function route() {
   if (page === "create" || page === "library") refreshSongs().catch(() => {});
   if (page === "mv" || page === "mvlib") refreshList().catch(() => {});
   if (page === "mv") refreshSongs().catch(() => {});
+  if (page === "mv" || page === "cast") refreshCast().catch(() => {});
+  if (page === "settings") loadLlm().catch(() => {});
   $("#main").scrollTop = 0;
 }
 

@@ -9,7 +9,7 @@ from pathlib import Path
 from fastapi import Body, FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse
 
-from . import brain, engine, studio, workflows
+from . import brain, cast, design, engine, llm_local, studio, workflows
 
 sys.path.insert(0, str(engine.SCRIPTS))
 import spotify_genres  # noqa: E402
@@ -62,7 +62,9 @@ def static(name: str):
 
 @app.get("/api/status")
 def status():
-    return {"claude": brain.status(), "current": ENGINE.current, "queue": ENGINE.queued()}
+    cfg = llm_local.load_cfg()
+    return {"claude": brain.status(), "current": ENGINE.current, "queue": ENGINE.queued(),
+            "llm": {"model": cfg["model"], "tasks": cfg["tasks"], "ready": {t: brain.ready(t) for t in llm_local.TASKS}}}
 
 
 @app.post("/api/key")
@@ -84,9 +86,13 @@ def projects():
 
 @app.post("/api/projects")
 def create(title: str = Body(...), brief: str = Body(""), mode: str = Body("review"),
-           music_source: str = Body(None), song_id: str = Body(None)):
+           music_source: str = Body(None), song_id: str = Body(None), cast_ids: list[str] = Body(None),
+           vmode: str = Body("stage"), style: str = Body(None), aspect: str = Body("16:9"), rng: str = Body("full", alias="range")):
     if mode not in ("review", "auto"):
         raise HTTPException(400, "mode must be review or auto")
+    opts = _check_opts({"vmode": vmode, "style": style or None, "aspect": aspect, "range": rng})
+    if vmode == "visualizer" and cast_ids:
+        raise HTTPException(400, "a visualizer has no people: don't pick cast members")
     if song_id:
         if not song_obj(song_id).has_audio():
             raise HTTPException(400, "that song has no audio yet")
@@ -96,9 +102,49 @@ def create(title: str = Body(...), brief: str = Body(""), mode: str = Body("revi
         raise HTTPException(400, "unknown music source")
     if not song_id and not brief.strip():
         raise HTTPException(400, "a brief is required when no song is chosen")
-    p = engine.create_project(title, brief, mode, music_source, song_id)
+    cast_ids = list(dict.fromkeys(cast_ids or []))
+    if len(cast_ids) > 2:
+        raise HTTPException(400, "an MV has at most 2 members")
+    try:
+        chosen = [cast.member(c) for c in cast_ids]
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    if len({m["name"] for m in chosen}) != len(chosen):
+        raise HTTPException(400, "two cast members have the same name")
+    p = engine.create_project(title, brief, mode, music_source, song_id, cast_ids, opts)
     ENGINE.submit(p.id, "concept")
     return {"id": p.id}
+
+
+def _check_opts(o):
+    if o.get("vmode", "stage") not in engine.VMODES:
+        raise HTTPException(400, "unknown video mode")
+    if o.get("aspect", "16:9") not in engine.ASPECTS:
+        raise HTTPException(400, "unknown aspect ratio")
+    if o.get("style") and o["style"] not in {s["id"] for s in engine.mv_styles()}:
+        raise HTTPException(400, "unknown style preset")
+    r = o.get("range", "full")
+    if not (r in engine.RANGES or (isinstance(r, dict) and isinstance(r.get("bars"), list) and len(r["bars"]) == 2
+                                   and all(isinstance(x, int) for x in r["bars"]))):
+        raise HTTPException(400, "unknown song range")
+    return o
+
+
+@app.get("/api/mv_styles")
+def mv_styles():
+    return engine.mv_styles()
+
+
+@app.post("/api/projects/{pid}/opts")
+def set_opts(pid: str, rng: str | dict | None = Body(None, alias="range"), aspect: str = Body(None)):
+    """Change the song range / aspect ratio of an existing MV; the page then redoes the shot design."""
+    p = proj(pid)
+    if jobs_for(pid):
+        raise HTTPException(409, "this MV has a job running or queued: wait until it finishes")
+    new = {k: v for k, v in {"range": rng, "aspect": aspect}.items() if v is not None}
+    _check_opts(new)
+    p.update(lambda s: s.__setitem__("opts", {**engine.DEFAULT_OPTS, **(s.get("opts") or {}), **new}))
+    return {"opts": ENGINE.opts(p)}
 
 
 @app.get("/api/projects/{pid}")
@@ -111,19 +157,31 @@ def project(pid: str, log_lines: int = 200):
     for s in shots:
         s["frame_file"] = fidx.get(s["id"], {}).get("chosen")
         s["clip_file"] = cidx.get(s["id"], {}).get("chosen")
+        s["frame_versions"] = [v["file"] for v in fidx.get(s["id"], {}).get("versions", [])]
+        s["clip_versions"] = [v["file"] for v in cidx.get(s["id"], {}).get("versions", [])]
+        s["edit"] = {k: v for k, v in st["overrides"].get(s["id"], {}).items() if k in engine.SHOT_EDIT_KEYS}
         s["qc_frame"] = st["qc"]["frames"].get(s["id"])
         s["qc_clip"] = st["qc"]["clips"].get(s["id"])
     refs = {}
     members = (p.jload("shots/members.json") or {}).get("members", {})
-    for name in members:
+    in_cast = {(c.get("from", {}).get("project"), c["name"]): c["id"] for c in cast.list_cast()}
+    for name, m in members.items():
         refs[name] = {"cands": sorted(f.name for f in (p.dir / "shots/refs").glob(f"{name}_cand*.png")),
-                      "chosen": st["refs"].get(name)}
+                      "chosen": st["refs"].get(name),
+                      "cast_id": m.get("cast_id") or in_cast.get((pid, name))}
+    rows = {r["first_bar"]: r for r in p.jload("shots/design_rows.json", [])}
+    for s in shots:   # start/end state chain from the shot design (older designs have none)
+        r = rows.get(s["bars"][0]) or {}
+        s["prev_state"], s["end_state"] = r.get("prev_state"), r.get("end_state")
     log = (p.dir / "agent.log")
     tail = log.read_text(encoding="utf-8", errors="replace").splitlines()[-log_lines:] if log.exists() else []
     return {"state": st, "shots": shots, "refs": refs, "log": tail, "labels": engine.LABELS,
             "stages": engine.STAGES,
             "has_audio": (p.dir / "audio/song.wav").exists(),
-            "plate": (p.dir / "shots/plates/stage.png").exists()}
+            "plate": (p.dir / "shots/plates/stage.png").exists(),
+            "plates": [f"shots/plates/{k}.png" for k in ENGINE.locations(p) if (p.dir / f"shots/plates/{k}.png").exists()]
+            if st.get("concept") else [],
+            "opts": ENGINE.opts(p), "post": ENGINE.post(p)}
 
 
 @app.post("/api/projects/{pid}/delete")
@@ -160,7 +218,131 @@ def mode(pid: str, mode: str = Body(..., embed=True)):
 
 
 ACTIONS = {"regen_music", "regen_concept", "regen_refs", "regen_design", "regen_frame", "regen_clip", "assemble",
-           "suno_download", "use_song"}
+           "suno_download", "use_song", "animatic"}
+
+
+# ---------- storyboard editor (board)
+def _board_ctx(p):
+    st = p.load()
+    if not st.get("concept") or not (p.dir / "shots/design_rows.json").exists():
+        raise HTTPException(409, "no storyboard yet: run the shot design step first")
+    lights = {l["key"]: l["description"] for l in st["concept"]["lights"]}
+    members = (p.jload("shots/members.json") or {}).get("members", {})
+    return st, lights, members
+
+
+@app.get("/api/projects/{pid}/board")
+def board(pid: str):
+    p = proj(pid)
+    st, lights, members = _board_ctx(p)
+    beats = p.jload("analysis/beats.json")
+    lyr = design._bar_lyrics()(beats)
+    shots = {tuple(s["bars"]): s for s in p.jload("shots/shots.json", [])}
+    fidx, cidx = p.jload("shots/frames/index.json", {}), p.jload("clips/index.json", {})
+    rows = p.jload("shots/design_rows.json", [])
+    for r in rows:
+        s = shots.get((r["first_bar"], r["last_bar"])) or {}
+        r["sid"] = s.get("id")
+        r["frame_file"] = fidx.get(s.get("id"), {}).get("chosen")
+        r["clip_file"] = cidx.get(s.get("id"), {}).get("chosen")
+    secs = beats["sections"]
+    locs = ENGINE.locations(p)
+    return {"rows": rows, "lights": lights, "members": list(members), "opts": ENGINE.opts(p),
+            "locations": locs if len(locs) > 1 else {}, "range": ENGINE.bar_range(p, beats),
+            "bars": [{"i": b["index"], "start": round(b["start"], 3), "end": round(b["end"], 3),
+                      "section": secs[b["section_index"]]["name"], "vocal": b["vocal"],
+                      "energy": round(b["energy"], 2), "lyric": lyr.get(b["index"], "")} for b in beats["bars"]],
+            "proposal": st.get("board_proposal"), "animatic": st.get("animatic"),
+            "busy": bool(jobs_for(pid))}
+
+
+@app.post("/api/projects/{pid}/board")
+def board_save(pid: str, rows: list[dict] = Body(..., embed=True)):
+    p = proj(pid)
+    st, lights, members = _board_ctx(p)
+    locs = list(ENGINE.locations(p))
+    locs = locs if len(locs) > 1 else None
+    try:
+        clean = [design.clean_board_row(r, lights, members, locs) for r in rows]
+    except (ValueError, KeyError, TypeError) as e:
+        raise HTTPException(400, str(e))
+    beats = p.jload("analysis/beats.json")
+    fixed, errors = design.validate(clean, beats, list(members), ENGINE.bar_range(p, beats), locs)
+    if errors:
+        raise HTTPException(400, "; ".join(errors[:8]))
+    ENGINE.submit(pid, "apply_board", rows=clean)
+    return {"ok": True, "changed": len(design.diff_rows(p.jload("shots/design_rows.json", []), fixed))}
+
+
+@app.post("/api/projects/{pid}/board/chat")
+def board_chat(pid: str, message: str = Body(..., embed=True)):
+    p = proj(pid)
+    _board_ctx(p)
+    message = message.strip()[:2000]
+    if not message:
+        raise HTTPException(400, "empty request")
+    if not brain.ready("design"):
+        raise HTTPException(409, "no model for the shot design: set a Claude key or choose the local model")
+    ENGINE.submit(pid, "board_chat", message=message)
+    return {"ok": True}
+
+
+@app.post("/api/projects/{pid}/choose")
+def choose_version(pid: str, kind: str = Body(...), sid: str = Body(...), file: str = Body(...)):
+    """Pick which generated version of a first frame / clip a shot uses (every version is kept)."""
+    p = proj(pid)
+    rel = {"frames": "shots/frames/index.json", "clips": "clips/index.json"}.get(kind)
+    if not rel:
+        raise HTTPException(400, "kind must be frames or clips")
+    with p.lock:
+        idx = p.jload(rel, {})
+        if sid not in idx or file not in [v["file"] for v in idx[sid].get("versions", [])]:
+            raise HTTPException(400, "unknown shot or version")
+        idx[sid]["chosen"] = file
+        (p.dir / rel).write_text(json.dumps(idx, indent=1, ensure_ascii=False), encoding="utf-8")
+    p.update(lambda s: s["qc"][kind].pop(sid, None))   # the QC result was for the other version
+    return {"ok": True}
+
+
+@app.post("/api/projects/{pid}/shot_edit")
+def shot_edit(pid: str, sid: str = Body(...), offset: float = Body(None), trans: str = Body(None)):
+    """Per-shot editing for the cut: start offset into the clip (seconds) and the transition into the shot."""
+    p = proj(pid)
+    if trans is not None and trans not in ("cut", "flash", "dip", "fade"):
+        raise HTTPException(400, "unknown transition")
+
+    def f(s):
+        e = s["overrides"].setdefault(sid, {})
+        if offset is not None:
+            e["offset"] = max(0.0, min(float(offset), 5.0))
+        if trans is not None:
+            e["trans"] = trans
+    p.update(f)
+    return {"ok": True}
+
+
+@app.post("/api/projects/{pid}/post")
+def set_post(pid: str, post: dict = Body(..., embed=True)):
+    """Post-production settings used by the next cut (captions, music-driven effects, grade, upscale)."""
+    p = proj(pid)
+    cap, fx = post.get("captions") or {}, post.get("fx") or {}
+    clean = {"captions": {"on": bool(cap.get("on")), "style": cap.get("style", "classic")},
+             "fx": {"pulse": max(0.0, min(float(fx.get("pulse") or 0), 1.0)),
+                    "punch": max(0.0, min(float(fx.get("punch") or 0), 1.0)), "where": fx.get("where", "all")},
+             "grade": post.get("grade", "none"), "upscale": bool(post.get("upscale"))}
+    if clean["captions"]["style"] not in ("classic", "bold", "minimal") or clean["fx"]["where"] not in \
+            ("all", "chorus", "high") or clean["grade"] not in ("none", "warm", "cool", "tealorange", "bw",
+                                                                 "vintage", "contrast"):
+        raise HTTPException(400, "unknown post-production option")
+    p.update(lambda s: s.__setitem__("post", clean))
+    return {"post": clean}
+
+
+@app.post("/api/projects/{pid}/board/discard")
+def board_discard(pid: str):
+    p = proj(pid)
+    p.update(lambda s: s.pop("board_proposal", None))
+    return {"ok": True}
 
 
 @app.post("/api/projects/{pid}/action")
@@ -193,6 +375,95 @@ def pick_ref(pid: str, name: str = Body(...), k: int = Body(...)):
     p = proj(pid)
     ENGINE.pick_ref(p, name, k)
     return {"ok": True}
+
+
+# ---------- local LLM (Unsloth Studio) instead of Claude, per task
+
+@app.get("/api/llm")
+def llm_get():
+    return {"config": llm_local.public_cfg(), "status": llm_local.status(), "tasks": llm_local.TASKS}
+
+
+@app.post("/api/llm")
+def llm_save(config: dict = Body(..., embed=True)):
+    return {"config": llm_local.save_cfg(config)}
+
+
+@app.get("/api/llm/models")
+def llm_models():
+    try:
+        return llm_local.models()
+    except RuntimeError as e:
+        raise HTTPException(502, str(e))
+
+
+def _gpu_free():
+    if ENGINE.current:
+        raise HTTPException(409, "a GPU job is running: try again when the queue is idle")
+
+
+@app.post("/api/llm/test")
+def llm_test():
+    _gpu_free()   # loading the model stops ComfyUI
+    try:
+        return llm_local.test()
+    except RuntimeError as e:
+        raise HTTPException(502, str(e))
+
+
+@app.post("/api/llm/unload")
+def llm_unload():
+    _gpu_free()
+    cfg = llm_local.load_cfg()
+    try:
+        return llm_local._req("/v1/unload", {"model_path": cfg["model"], "force_cancel_active": True}, timeout=120)
+    except RuntimeError as e:
+        raise HTTPException(502, str(e))
+
+
+# ---------- cast library (members reused across MVs)
+
+@app.get("/api/cast")
+def cast_list():
+    return cast.list_cast()
+
+
+@app.post("/api/cast/save")
+def cast_save(pid: str = Body(...), name: str = Body(...)):
+    """Save a project member with a chosen reference portrait to the cast library."""
+    p = proj(pid)
+    st = p.load()
+    m = next((m for m in (st.get("concept") or {}).get("members", []) if m["name"] == name), None)
+    ref = p.dir / f"shots/refs/{name}.png"
+    if not m or not st["refs"].get(name) or not ref.exists():
+        raise HTTPException(400, "choose a reference portrait for this member first")
+    m = dict(m)
+    m.update({k: v for k, v in ((p.jload("shots/members.json") or {}).get("members", {}).get(name) or {}).items()
+              if k in cast.FIELDS})   # the edited look in members.json wins
+    m["name"] = name
+    return cast.save_from_project(pid, st["title"], m, ref)
+
+
+@app.post("/api/cast/{cid}/delete")
+def cast_delete(cid: str):
+    try:
+        d = cast.ref_path(cid).parent
+    except ValueError:
+        raise HTTPException(400, "bad cast id")
+    if not (d / "cast.json").exists():
+        raise HTTPException(404, "no such cast member")
+    return {"ok": True, "trash": to_trash("cast", d, cid)}
+
+
+@app.get("/castfiles/{cid}/ref.png")
+def cast_ref(cid: str):
+    try:
+        f = cast.ref_path(cid)
+    except ValueError:
+        raise HTTPException(400, "bad cast id")
+    if not f.exists():
+        raise HTTPException(404)
+    return FileResponse(f, headers={"Cache-Control": "no-cache"})
 
 
 # ---------- ComfyUI workflows (library + per-project choice)

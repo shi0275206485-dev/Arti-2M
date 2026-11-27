@@ -1,6 +1,7 @@
 # --- secrets / local credentials (never commit) ---
 .suno/
 .spotify/
+.llm/
 .env
 *.key
 
@@ -15,6 +16,7 @@ logs/
 projects/
 songs/
 trash/
+cast/
 music/
 audio/
 stems/

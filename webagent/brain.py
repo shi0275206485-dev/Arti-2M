@@ -6,10 +6,13 @@ server-side refusal fallback. Every function returns plain dicts.
 import base64
 import io
 import json
+import re
 from pathlib import Path
 
 import anthropic
 from PIL import Image
+
+from . import llm_local
 
 MODEL = "claude-opus-5-5"
 BETAS = ["server-side-fallback-2026-07-01"]
@@ -50,7 +53,24 @@ def _image_block(path, max_side=768):
                                         "data": base64.standard_b64encode(buf.getvalue()).decode()}}
 
 
-def _call(system, content, schema, effort="high", max_tokens=32000):
+def ready(task):
+    """Can this task run now? Local tasks only need a configured model (Studio is checked when called)."""
+    return llm_local.uses_local(task) or status()["ok"]
+
+
+def who(task):
+    """Name of the model a task runs on, for log lines."""
+    return "the local model" if llm_local.uses_local(task) else "Claude"
+
+
+def _call(system, content, schema, effort="high", max_tokens=32000, task=None):
+    if task and llm_local.uses_local(task):   # settings page: this task runs on the local model (Unsloth Studio)
+        try:
+            return llm_local.chat_json(system, content, schema, max_tokens=min(max_tokens, 24000))
+        except llm_local.Unavailable as e:   # Studio down / not loadable: use Claude if a key is set
+            if not status()["ok"]:
+                raise
+            llm_local.LOG(f"local LLM unavailable ({e}); using Claude for '{task}' this time")
     with client().beta.messages.stream(
         model=MODEL,
         max_tokens=max_tokens,
@@ -116,10 +136,39 @@ Hard-won rules (from previous productions):
   describing the stage lighting only (not the location)."""
 
 
-def concept(brief, song=None):
+VMODE_CONCEPT = {
+    "story": """
+
+MODE: STORY VIDEO (overrides the single-stage rule above). The MV tells a simple visual story across 2-4
+LOCATIONS instead of one stage. locations: each {key: one lowercase word, description: an EMPTY location plate
+seen at eye level, no people, no letters, no signage, screens as abstract light}. The members move through these
+places as the song progresses (e.g. bedroom at night -> empty street -> rooftop at dawn). stage_plate repeats the
+description of the first location. lights are now moods / times of day for the locations (e.g. NIGHT, NEON,
+DAWN), still 5-8 keys. Keep it simple and readable: one clear arc, no crowds, no complex action.""",
+    "visualizer": """
+
+MODE: VISUALIZER (no people). members must be an empty list: the video is abstract / atmospheric imagery
+driven by the music (light, shapes, landscapes, objects, particles). stage_plate is the main set or landscape
+the inserts are built around (no people, no letters). lights are 6-8 visual states that follow the song's energy.
+Lyrics stay as they are (or empty for instrumentals).""",
+}
+
+
+def concept(brief, song=None, cast=None, vmode="stage", style=None):
     """song: an existing song from the music studio ({title, style, lyrics}); its words are kept as they are
-    and only the visual concept is designed around it."""
+    and only the visual concept is designed around it.
+    cast: members from the reusable cast library; they appear exactly as saved (same name, look, portrait).
+    vmode: stage (performance on one stage) / story (2-4 locations) / visualizer (no people).
+    style: a visual style preset from data/mv_styles.json (its frame/video style are used as they are)."""
     text = "Brief from the user:\n" + (brief.strip() or "(no brief: base the concept on the song)")
+    if style:
+        text += f"\n\nVisual style chosen by the user: {style['name_en']} - {style['hint']}"
+    if cast:
+        text += ("\n\nThe members are FIXED: they come from the user's cast library and already have reference "
+                 "portraits. Use exactly these members (same names, noun, look, signature_color, video_desc, in "
+                 "this order) and no others; design the stage, lights and styles to suit them.\n"
+                 + json.dumps([{k: m[k] for k in ("name", "noun", "look", "signature_color", "video_desc")}
+                               for m in cast], ensure_ascii=False))
     if song:
         text += ("\n\nThe song ALREADY EXISTS and must not change. Copy its title, style and lyrics into your answer "
                  "exactly as given and design the members, looks, stage and lights to fit it. Choose the number and "
@@ -130,11 +179,54 @@ def concept(brief, song=None):
             text += ("\n\nThe song is INSTRUMENTAL (no vocals): nobody sings or lip-syncs. lyrics must be an empty "
                      "string. Members perform through presence, looks, small natural movement and interaction with "
                      "each other and the light; no instruments in their hands, no microphones.")
-    c = _call(CONCEPT_SYSTEM, [{"type": "text", "text": text}], CONCEPT_SCHEMA, effort="high")
+    schema = CONCEPT_SCHEMA
+    if vmode == "story":
+        schema = _obj({**CONCEPT_SCHEMA["properties"],
+                       "locations": {"type": "array", "items": _obj({"key": S, "description": S})}})
+    c = _call(CONCEPT_SYSTEM + VMODE_CONCEPT.get(vmode, ""), [{"type": "text", "text": text}], schema,
+              effort="high", task="concept")
     if song:
         c.update(title=song.get("title") or c["title"], style=song.get("style") or c["style"],
                  lyrics=song.get("lyrics") or "")
+    if vmode == "visualizer":
+        c["members"] = []
+    elif cast:   # never trust the model to copy them: the portraits only match the saved looks
+        c["members"] = [dict(m) for m in cast]
+    else:
+        _fix_names(c["members"])
+    if style:   # the preset's look wins over the model's paraphrase
+        c["frame_style"], c["video_style"] = style["frame_style"], style["video_style"]
+    if vmode == "story":
+        c["locations"] = _fix_locations(c.get("locations") or [], c["stage_plate"])
+        c["stage_plate"] = c["locations"][0]["description"]
     return c
+
+
+def _fix_locations(locs, plate):
+    """Location keys become plate file names (shots/plates/<key>.png): short lowercase words, distinct, 1-4."""
+    out, used = [], set()
+    for l in locs[:4]:
+        k = re.sub(r"[^a-z]", "", (l.get("key") or "").lower())[:12] or f"place{len(out) + 1}"
+        if k in used or k == "stage":
+            k = f"{k}{len(out) + 1}"
+        used.add(k)
+        out.append({"key": k, "description": l.get("description") or plate})
+    return out or [{"key": "place1", "description": plate}]
+
+
+STAGE_NAMES = ["Nova", "Echo", "Lux", "Rio", "Kai", "Zara", "Juno", "Vega", "Ash", "Mika"]
+
+
+def _fix_names(members):
+    """Names become file names (shots/refs/<name>.png) and prompt placeholders: one short word each, distinct.
+    Smaller (local) models sometimes answer 'Member 1'."""
+    used = set()
+    for m in members:
+        n = re.sub(r"[^A-Za-z]", "", m.get("name") or "")[:12].capitalize()
+        if not n or n.lower() in ("member", "singer", "woman", "man", "girl", "boy", "person") or n in used:
+            n = next(x for x in STAGE_NAMES if x not in used)
+        m["name"] = n
+        used.add(n)
 
 
 # ---------------------------------------------------------------- song (music studio)
@@ -183,7 +275,7 @@ def song_draft(brief, engine="YuE2", instrumental=False, genre=None, settings=No
         text += "\n\nThe user marked this song as INSTRUMENTAL: set instrumental=true and leave lyrics empty."
     length = (settings or {}).get("length") or "standard"
     r = _call(SONG_SYSTEM.format(engine=engine, length=LENGTHS[length]), [{"type": "text", "text": text}],
-              _song_schema(), effort="medium", max_tokens=16000)
+              _song_schema(), effort="medium", max_tokens=16000, task="song")
     r["settings"]["length"] = r["settings"].get("length") or length
     if instrumental:
         r.update(instrumental=True, lyrics="")
@@ -209,7 +301,7 @@ def cover_prompt(title, style, lyrics="", instrumental=False, genre=None, brief=
             + (f"Category: {genre.get('name')}\n" if genre else "")
             + (f"Brief: {brief}\n" if brief else "")
             + ("Instrumental (no lyrics).\n" if instrumental or not lyrics.strip() else f"Lyrics:\n{lyrics[:4000]}\n"))
-    return _call(COVER_SYSTEM, [{"type": "text", "text": text}], COVER_SCHEMA, effort="low", max_tokens=8000)
+    return _call(COVER_SYSTEM, [{"type": "text", "text": text}], COVER_SCHEMA, effort="low", max_tokens=8000, task="cover")
 
 
 # ---------------------------------------------------------------- shot design
@@ -221,9 +313,12 @@ DESIGN_SCHEMA = _obj({"rows": {"type": "array", "items": _obj({
     "members": {"type": "array", "items": S},
     "lipsync": {"anyOf": [{"type": "string"}, {"type": "null"}]},
     "size": {"type": "string", "enum": SIZES},
+    "angle": {"type": "string", "enum": ["front", "three-quarter", "side", "low", "high"]},
+    "gaze": {"type": "string", "enum": ["camera", "partner", "crowd", "down", "up"]},
     "light": S,
     "action": S,
     "motion": S,
+    "end_state": S,
 })}})
 
 DESIGN_SYSTEM = """You are the shot designer of an automated performance-MV pipeline (Qwen Image 2.1 first frames,
@@ -252,19 +347,135 @@ Rules (each learned from a failed render; follow them strictly):
 - Never ask a screen to show faces, people or text. Describe screens as abstract light.
 - Camera: prefer "static tripod shot"; never "pull back" or "push in" on people (the model drifts wide or
   crops too close).
+- angle: front / three-quarter (eye level) / side (profile) / low (from the stage edge looking up) / high.
+  Lip-sync shots only front, three-quarter or low (the mouth must stay readable). stage_wide/back_view: front.
+- gaze (first frame): camera / partner (duo only: a glance, faces stay toward the camera) / crowd / down / up.
+- EVERY CUT MUST CHANGE SOMETHING VISIBLE. Each clip is generated on its own, so two neighbouring shots of the
+  same subject (same kind + same members) at a similar size look like a glitch. Between consecutive rows change
+  at least one of: the subject (other member, solo <-> duo, an empty insert), the size by 2+ steps
+  (close-up <-> medium), or the angle family (front/three-quarter vs side vs low vs high).
+- The stage layout is fixed: the FIRST member in the list always stands on the audience's left, the second on
+  the right. Never make them swap sides; the screen side is added to the prompts automatically.
 - light: one of the given lighting keys, following the song's energy arc.
 - action: what is in the first frame, as a short clause using member NAMES (e.g. "NOVA singing toward ECHO,
   who smiles back"). For empty shots: the full description of the insert (stage, lights, crowd...).
-- motion: what moves during the shot, one sentence, using names."""
+- motion: what moves during the shot, one sentence, using names.
+- end_state: the pose and position the members are in at the END of the shot, a short clause with names (e.g.
+  "Rosa still on the left, arm around Dex's shoulder, both facing the camera"). It must follow from action +
+  the small motion (usually it is the first-frame pose with a tiny change). "" for empty inserts.
+- STATE CONTINUITY: the next row that shows the same member(s) starts where their previous row's end_state left
+  them: same side of the stage, same pose family, same outfit and accessories (nothing appears or vanishes,
+  e.g. a jacket taken off stays off). A pose may only reset at a section change, and then by a plausible
+  move (e.g. arm around the shoulder -> standing side by side). Keep a running state per member while writing.
+- VARIETY (an MV where every shot is "X looking at the camera, smiling" is a failure):
+  * Every people shot has a concrete action: a POSE + WHERE on the stage + an EXPRESSION, e.g. "Nova leaning
+    back against the convertible's door, chin up, half-smile", "Echo sitting on the stage edge, eyes closed,
+    feeling the bass". "looking at the camera" or "smiling" alone is not an action.
+  * Use the stage itself: the props named in the stage description (a car, stairs, a railing, a platform...)
+    should carry at least a third of the people shots (leaning on, sitting on/in, standing beside, behind).
+  * Allowed pose palette (all keep faces visible): leaning on a prop, sitting on a prop or the stage edge,
+    one sitting while the other stands behind, head resting on the partner's shoulder, back to back (static,
+    both faces to camera), arm around the shoulder, chin raised to the light, eyes closed then opening, laughing,
+    hair moved by wind, adjusting a collar or sunglasses (no hand close-up), walking two steps along the stage
+    edge, turning the head from the partner to the camera.
+  * Never repeat the same action wording; a member's consecutive appearances must differ in pose or place.
+  * action describes the PEOPLE only; shot size, angle and kind go in their own fields, never in the action
+    ("Nova medium shot, three-quarter view" is wrong).
+  * Inserts (empty shots) differ from each other too: a prop detail (headlight, chrome, wheel), the LED wall,
+    beams through haze, crowd silhouettes with raised arms, confetti or sparks.
+  * Let the light key's description shape the action and mood (a warm sunset key -> relaxed, nostalgic poses;
+    a strobe key -> sharper, more energetic ones)."""
+
+DESIGN_PLAN = ("plan: BEFORE the rows, write a short plan: for each section of the bar grid, the light key, the "
+               "story beat, which props and poses it uses, and how it differs from the previous section.")
 
 
-def design(bars_text, members, lights, feedback=None):
-    content = (f"Members: {', '.join(members)}\nLighting keys: {', '.join(lights)}\n\n"
-               f"Bar grid (index, section, vocal, energy, lyric):\n{bars_text}")
+VMODE_DESIGN = {
+    "story": """
+- STORY MODE (replaces the stage wording above): there is no stage and no crowd. Every row has a "location"
+  (one of the location keys). Rows of one section mostly stay in one location; change location at section
+  boundaries so the story moves forward (the concept's arc). stage_wide = a wide establishing shot of both members
+  in the location (use sparingly, faces get small); back_view = both seen from behind looking into the location;
+  empty = the location without people, or a detail of it. Poses use the location's furniture and architecture
+  (sitting on the bed edge, leaning on the railing, walking two steps along the street). The light key is the
+  location's mood / time of day and should match the location (e.g. no DAWN light in a night scene).""",
+    "visualizer": """
+- VISUALIZER MODE: there are no members. Every row is kind "empty" with members [] and lipsync null; the action
+  describes the image (light, shapes, landscape, objects, particles, the set), the motion how it moves with the
+  music. Vary the images strongly between rows (scale, subject, colour) and cut faster on high-energy bars.""",
+}
+
+
+def _design_brief(members, lights, ctx):
+    locs = ctx.get("locations") or []
+    loc_text = ("\nLocations (row field location):\n" + "\n".join(f"- {l['key']}: {l['description']}" for l in locs)
+                if ctx.get("vmode") == "story" and locs else "")
+    return _design_brief_base(members, lights, ctx) + loc_text
+
+
+def _design_brief_base(members, lights, ctx):
+    if isinstance(members, dict):
+        mem = "\n".join(f"- {n} ({m.get('noun', 'person')}): {m.get('look', '')}" for n, m in members.items())
+    else:
+        mem = ", ".join(members)
+    lt = "\n".join(f"- {k}: {v}" for k, v in lights.items()) if isinstance(lights, dict) else ", ".join(lights)
+    return (f"Song: {ctx.get('title') or ''} | {ctx.get('style') or ''}"
+            + (" (instrumental: nobody sings)" if ctx.get("instrumental") else "")
+            + (f"\nMV idea: {ctx['brief']}" if ctx.get("brief") else "")
+            + (f"\nStage (the set every shot happens on): {ctx['stage_plate']}" if ctx.get("stage_plate") else "")
+            + f"\n\nMembers (left to right on stage):\n{mem}\n\nLighting keys:\n{lt}")
+
+
+def _design_call(system, content, ctx=None):
+    ctx = ctx or {}
+    vmode = ctx.get("vmode", "stage")
+    system += VMODE_DESIGN.get(vmode, "")
+    props = dict(DESIGN_SCHEMA["properties"])
+    if vmode == "story" and ctx.get("locations"):
+        row = DESIGN_SCHEMA["properties"]["rows"]["items"]
+        keys = [l["key"] for l in ctx["locations"]]
+        props["rows"] = {"type": "array", "items": _obj({**row["properties"],
+                                                          "location": {"type": "string", "enum": keys}})}
+    if llm_local.uses_local("design"):
+        # smaller local models design better when they plan the sections first (a field before the rows)
+        system += "\n- " + DESIGN_PLAN
+        props = {"plan": S, **props}
+    return _call(system, [{"type": "text", "text": content}], _obj(props),
+                 effort="high", max_tokens=64000, task="design")["rows"]
+
+
+ROW_FIELDS = ("first_bar", "last_bar", "kind", "members", "lipsync", "size", "angle", "gaze", "light", "action",
+              "motion", "end_state", "location")
+
+REVISE_SYSTEM = DESIGN_SYSTEM + """
+
+You are now REVISING an existing storyboard on the user's request (an MV editor's chat box):
+- Return the COMPLETE storyboard (all rows, every bar covered exactly once), not only the changed rows.
+- Change only what the request asks for (and what it needs, e.g. continuity of the next shot of the same
+  member); keep every other row exactly as it was, word for word.
+- Rows marked "locked": true must come back unchanged (same bars and every field identical).
+- A request about a section or bar range changes only rows inside it. Splitting or merging shots is allowed when
+  the request is about pacing (more / fewer cuts)."""
+
+
+def revise_design(rows, request, bars_text, members, lights, context=None):
+    """Chat edit of a storyboard: returns the full revised rows (the caller restores locked rows and validates)."""
+    cur = [{k: r.get(k) for k in ROW_FIELDS if k in r} | ({"locked": True} if r.get("locked") else {}) for r in rows]
+    content = (_design_brief(members, lights, context or {})
+               + f"\n\nBar grid (index, section, vocal, energy, lyric):\n{bars_text}"
+               + f"\n\nCurrent storyboard:\n{json.dumps(cur, ensure_ascii=False)}"
+               + f"\n\nThe user's request: {request}")
+    return _design_call(REVISE_SYSTEM, content, context)
+
+
+def design(bars_text, members, lights, feedback=None, context=None):
+    """members: {name: info} (or a list of names); lights: {key: description} (or a list of keys);
+    context: {title, style, brief, stage_plate, instrumental} from the concept, so actions fit the stage."""
+    content = (_design_brief(members, lights, context or {})
+               + f"\n\nBar grid (index, section, vocal, energy, lyric):\n{bars_text}")
     if feedback:
         content += f"\n\nYour previous design had problems, fix them:\n{feedback}"
-    return _call(DESIGN_SYSTEM, [{"type": "text", "text": content}], DESIGN_SCHEMA,
-                 effort="high", max_tokens=64000)["rows"]
+    return _design_call(DESIGN_SYSTEM, content, context)
 
 
 # ---------------------------------------------------------------- reference pick
@@ -279,7 +490,7 @@ def pick_reference(look, paths):
         f"Target look: {look}\nPick the candidate that best matches the look, has a clean front-facing sharp face, "
         "no artifacts, no text, plain background. Return its index.")})
     return _call("You choose character reference portraits for an AI music video.", content,
-                 PICK_SCHEMA, effort="low", max_tokens=4000)
+                 PICK_SCHEMA, effort="low", max_tokens=4000, task="pick")
 
 
 # ---------------------------------------------------------------- QC
@@ -298,6 +509,15 @@ Minor stylistic imperfections are fine. fix: a short phrase to ADD to the prompt
 (e.g. "static tripod shot, both stay in place"), or "" when ok."""
 
 
+def _continuity(shot):
+    prev = shot.get("prev_state")
+    if not prev:
+        return ""
+    return (f"\nContinuity: these members' previous shot ended with: {prev}. Fail only for a clear contradiction "
+            "a viewer would notice at the cut (outfit or accessory changed, members swapped sides); a different "
+            "camera angle or a small change of pose is fine.")
+
+
 def qc_frame(shot, frame_path, ref_paths):
     content = []
     for name, p in ref_paths.items():
@@ -305,9 +525,9 @@ def qc_frame(shot, frame_path, ref_paths):
     content += [{"type": "text", "text": "Generated first frame:"}, _image_block(frame_path)]
     content.append({"type": "text", "text": (
         f"Shot {shot['id']} ({shot['shot']}, members: {', '.join(shot['members']) or 'none'}).\n"
-        f"Intended: {shot['frame']['prompt']}\n\n{QC_RULES}")})
+        f"Intended: {shot['frame']['prompt']}{_continuity(shot)}\n\n{QC_RULES}")})
     return _call("You are the quality checker of an AI music video pipeline. Judge the still frame.",
-                 content, QC_SCHEMA, effort="low", max_tokens=8000)
+                 content, QC_SCHEMA, effort="low", max_tokens=8000, task="qc")
 
 
 def qc_clip(shot, sample_paths, ref_paths):
@@ -321,4 +541,4 @@ def qc_clip(shot, sample_paths, ref_paths):
         f"Intended first frame: {shot['frame']['prompt']}\nIntended motion: {shot['video']['prompt']}\n\n"
         f"{QC_RULES}\nfix must be a MOTION prompt addition.")})
     return _call("You are the quality checker of an AI music video pipeline. Judge the video clip from its frames.",
-                 content, QC_SCHEMA, effort="low", max_tokens=8000)
+                 content, QC_SCHEMA, effort="low", max_tokens=8000, task="qc")
